@@ -20,12 +20,12 @@ module.exports = (app) => {
   // API Routes
   ///////////////////////////////////////////////////////////
   app.get("/", (req, res, next) => {
-    res.sendFile(process.cwd() + "/views/index.html");
+    res.sendFile(path.join(public, "/views/index.html"));
   });
 
   // Serve static files
   app.get("/url", (req, res, next) => {
-    res.sendFile(process.cwd() + "/views/url.html");
+    res.sendFile(path.join(public, "/views/url.html"));
   });
 
   // Create short URL from original URL
