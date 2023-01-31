@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API | Mathis LAMBERT</title>
+    <link rel="shortcut icon" href="images/favicon.png" type="image/png" />
+
+    <link href="style/style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <div class="background">
+      <div class="background__gradient">
+        <div class="gradient el-1 primary"></div>
+        <div class="gradient el-2 secondary"></div>
+        <div class="gradient el-3 tertiary"></div>
+        <div class="gradient el-4 primary"></div>
+        <div class="gradient el-5 secondary"></div>
+        <div class="gradient el-6 tertiary"></div>
+        <div class="gradient el-7 primary"></div>
+        <div class="gradient el-8 secondary"></div>
+        <div class="gradient el-9 tertiary"></div>
+      </div>
+    </div>
+
+    <header></header>
+    <script>
+      // include ex.html
+      fetch("includes/header.html")
+        .then((response) => response.text())
+        .then((html) => {
+          document.querySelector("header").innerHTML = html;
+        });
+    </script>
+
+    <div class="main-card">
+      <div class="main-card__content">
+        <h1>Bienvenu sur api.mathislambert.fr</h1>
+        <p>Voici la liste des APIs disponibles :</p>
+        <br />
+        <ul class="api-list">
+          <li class="api-list__item">
+            <a href="/url">Raccourcir un lien</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

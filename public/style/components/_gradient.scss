@@ -1,0 +1,167 @@
+.background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  border-radius: 0 0 9px 9px;
+
+  overflow: hidden;
+
+  &__gradient {
+    position: absolute;
+    inset: 0;
+
+    & .gradient {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px) brightness(1.25) saturate(1.5);
+      aspect-ratio: 1;
+      &.primary {
+        background-color: rgba($color: #03488e, $alpha: 0.5);
+      }
+      &.secondary {
+        background-color: rgba($color: #ff0072, $alpha: 0.5);
+      }
+      &.tertiary {
+        background-color: rgba($color: #77fdff, $alpha: 0.5);
+      }
+
+      &.el-1 {
+        width: 30%;
+        animation: move-1 20s ease-in-out infinite;
+
+        @keyframes move-1 {
+          50% {
+            transform: translate(50%, 75%);
+          }
+        }
+      }
+      &.el-2 {
+        transform: translate(5%, 90%);
+        width: 30%;
+        animation: move-2 15s ease-in-out infinite;
+        @keyframes move-2 {
+          50% {
+            transform: translate(75%, 50%);
+          }
+        }
+      }
+      &.el-3 {
+        bottom: 0;
+        width: 50%;
+        animation: move-3 30s ease-in-out infinite;
+
+        @keyframes move-3 {
+          50% {
+            transform: translate(90%, 80%);
+          }
+        }
+      }
+      &.el-4 {
+        bottom: 0;
+        right: 0;
+        width: 50%;
+        animation: move-4 40s ease-in-out infinite;
+
+        @keyframes move-4 {
+          50% {
+            transform: translate(-50%, -80%);
+          }
+        }
+      }
+      &.el-5 {
+        transform: translate(50%, 50%);
+        width: 60%;
+        animation: move-5 40s ease-in-out infinite;
+
+        @keyframes move-5 {
+          25% {
+            transform: translate(0%, 0%);
+          }
+          50% {
+            transform: translate(100%, 100%);
+          }
+          75% {
+            transform: translate(0%, 0%);
+          }
+        }
+      }
+      &.el-6 {
+        transform: translate(75%, 75%);
+
+        width: 30%;
+        animation: move-6 30s ease-in-out infinite;
+
+        @keyframes move-6 {
+          0% {
+            transform: translate(75%, 75%);
+          }
+          25% {
+            transform: translate(25%, 50%);
+          }
+          50% {
+            transform: translate(0%, 0%);
+          }
+          100% {
+            transform: translate(75%, 75%);
+          }
+        }
+      }
+      &.el-7 {
+        transform: translate(75%, 75%);
+
+        width: 30%;
+        animation: move-7 60s ease-in-out infinite;
+
+        @keyframes move-7 {
+          25% {
+            transform: translate(25%, 50%);
+          }
+          50% {
+            transform: translate(0%, 0%);
+          }
+          75% {
+            transform: translate(75%, 75%);
+          }
+        }
+      }
+      &.el-8 {
+        transform: translate(15%, 95%);
+
+        width: min(30%, 30vw);
+        animation: move-8 50s ease-in-out infinite;
+
+        @keyframes move-8 {
+          25% {
+            transform: translate(15%, 15%);
+          }
+          50% {
+            transform: translate(0%, 0%);
+          }
+          75% {
+            transform: translate(55%, 35%);
+          }
+        }
+      }
+      &.el-9 {
+        transform: translate(75%, 15%);
+        width: 30%;
+        animation: move-9 75s ease-in-out infinite;
+
+        @keyframes move-9 {
+          25% {
+            transform: translate(25%, 50%);
+          }
+          50% {
+            transform: translate(0%, 0%);
+          }
+          75% {
+            transform: translate(75%, 75%);
+          }
+        }
+      }
+    }
+  }
+}

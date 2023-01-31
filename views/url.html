@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>URL | Mathis LAMBERT</title>
+
+    <link rel="shortcut icon" href="images/favicon.png" type="image/png" />
+
+    <link href="style/style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <div class="background">
+      <div class="background__gradient">
+        <div class="gradient el-1 primary"></div>
+        <div class="gradient el-2 secondary"></div>
+        <div class="gradient el-3 tertiary"></div>
+        <div class="gradient el-4 primary"></div>
+        <div class="gradient el-5 secondary"></div>
+        <div class="gradient el-6 tertiary"></div>
+        <div class="gradient el-7 primary"></div>
+        <div class="gradient el-8 secondary"></div>
+        <div class="gradient el-9 tertiary"></div>
+      </div>
+    </div>
+
+    <header></header>
+    <script>
+      // include ex.html
+      fetch("includes/header.html")
+        .then((response) => response.text())
+        .then((html) => {
+          document.querySelector("header").innerHTML = html;
+        });
+    </script>
+
+    <div class="main-card">
+      <h1>Raccourcir une url</h1>
+      <p>
+        Pour raccourcir une url, rentrez l'url dans le champ ci-dessous et
+        cliquez sur le bouton "Raccourcir"
+      </p>
+      <br />
+      <div class="formurl formSending">
+        <input
+          type="text"
+          name="url"
+          id="url"
+          placeholder="Rentrez votre url ici"
+        />
+        <div class="sendUrl">
+          <button id="submit">Raccourcir</button>
+        </div>
+      </div>
+      <div id="result">
+        <div class="formurl">
+          <input type="text" id="shortUrl" />
+          <div class="sendUrl">
+            <button id="copy">Copier</button>
+          </div>
+        </div>
+
+        <a href="#" id="accessLink">Accéder à l'URL</a>
+      </div>
+    </div>
+
+    <script src="js/urlController.js"></script>
+  </body>
+</html>
