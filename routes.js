@@ -37,7 +37,7 @@ module.exports = (app) => {
       if (err) {
         console.error(err);
       } else {
-        console.info("New IoT data saved");
+        res.status(200).json({ message: "Data saved" });
       }
     });
   });
