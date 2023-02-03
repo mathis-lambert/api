@@ -25,15 +25,12 @@ module.exports = (app) => {
   });
 
   app.post("/", (req, res, next) => {
-    let data = { timestamp: Date.now(), ...req.body };
-    console.debug(data);
-
     let newIoT = new IoTSchema({
-      timestamp: data.timestamp,
+      timestamp: Date.now(),
       values: {
-        temperature: data.values.temp,
-        humidity: data.values.hum,
-        pressure: data.values.pressure,
+        temperature: req.body.values.temp,
+        humidity: req.body.values.hum,
+        pressure: req.body.values.pressure,
       },
     });
     newIoT.save((err, data) => {
