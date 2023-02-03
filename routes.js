@@ -27,7 +27,13 @@ module.exports = (app) => {
   app.post("/", (req, res, next) => {
     let data = { timestamp: Date.now(), ...req.body };
     let newIoT = new IoTSchema(data);
-    newIoT.save((err, data) => {});
+    newIoT.save((err, data) => {
+      if (err) {
+        console.error(err);
+      } else {
+        res.json(data);
+      }
+    });
   });
 
   // Serve static files
