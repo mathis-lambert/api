@@ -23,7 +23,7 @@ module.exports = (app) => {
     res.sendFile(path.join(public, "/views/index.html"));
     // redirect to https
     if (req.headers["x-forwarded-proto"] !== "https") {
-      res.redirect("https://" + req.headers.host + req.url);
+      res.redirect("https://api.mathislambert.fr" + req.url);
     } else {
       next();
     }
