@@ -24,7 +24,7 @@ module.exports = (app) => {
     res.sendFile(path.join(public, "/views/index.html"));
   });
 
-  app.post("/", (req, res, next) => {
+  app.post("/", async (req, res, next) => {
     let newIoT = new IoTSchema({
       timestamp: Date.now(),
       values: {
@@ -33,7 +33,7 @@ module.exports = (app) => {
         pressure: req.body.values.pressure,
       },
     });
-    newIoT.save((err, data) => {
+    await newIoT.save((err, data) => {
       if (err) {
         console.error(err);
       } else {
@@ -47,7 +47,7 @@ module.exports = (app) => {
     res.sendFile(path.join(public, "/views/url.html"));
   });
 
-  app.get("/iot", (req, res, next) => {
+  app.get("/iot/list", (req, res, next) => {
     let allData = [];
     IoTSchema.find({}, (err, data) => {
       if (err) {
@@ -59,6 +59,25 @@ module.exports = (app) => {
         res.json(allData);
       }
     });
+  });
+
+  app.get("/iot/last", (req, res, next) => {
+    IoTSchema.findOne({}, {}, { sort: { timestamp: -1 } }, (err, data) => {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ error: "Server error" });
+      } else {
+        if (data) {
+          res.json(data);
+        } else {
+          res.status(404).json({ error: "No data found" });
+        }
+      }
+    });
+  });
+
+  app.get("/iot", (req, res, next) => {
+    res.sendFile(path.join(public, "/views/iot.html"));
   });
 
   // Create short URL from original URL
