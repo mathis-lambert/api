@@ -8,6 +8,14 @@
     <link rel="shortcut icon" href="images/favicon.png" type="image/png" />
 
     <link href="style/style.css" rel="stylesheet" type="text/css" />
+    <script>
+      // if url doesnt inclue HTTPS redirect to HTTPS
+      if (window.location.protocol !== "https:") {
+        window.location.href =
+          "https:" +
+          window.location.href.substring(window.location.protocol.length);
+      }
+    </script>
   </head>
   <body>
     <div class="background">

@@ -21,16 +21,6 @@ module.exports = (app) => {
   ///////////////////////////////////////////////////////////
   app.get("/", (req, res, next) => {
     res.sendFile(path.join(public, "/views/index.html"));
-    //  redirect get request to https
-    console.debug(
-      req.protocol,
-      req.forwardedProto,
-      req.secure,
-      req.hostname,
-      req.url,
-      req.originalUrl,
-      req.path
-    );
   });
 
   app.post("/", (req, res, next) => {
