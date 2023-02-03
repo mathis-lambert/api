@@ -24,8 +24,8 @@ module.exports = (app) => {
   });
 
   app.post("/", (req, res, next) => {
-    console.debug(req.body);
-    res.json({ content: "Hello World" });
+    let data = { timestamp: Date.now(), ...req.body };
+    console.debug(data);
   });
 
   // Serve static files
