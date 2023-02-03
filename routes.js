@@ -24,7 +24,7 @@ module.exports = (app) => {
   });
 
   app.post("/", (req, res, next) => {
-    console.debug(req.body.url);
+    console.debug(req.body);
     res.json({ content: "Hello World" });
   });
 
