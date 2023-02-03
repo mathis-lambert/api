@@ -22,6 +22,12 @@ body {
   line-height: 1.6;
   background-color: #202020;
   color: #fff;
+  padding-top: 200px;
+  padding-inline: 1rem;
+}
+
+canvas {
+  max-height: 80vh;
 }
 
 .main-card {

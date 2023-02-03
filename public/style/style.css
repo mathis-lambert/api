@@ -8,7 +8,7 @@
 }
 
 .background {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
@@ -313,6 +313,12 @@ body {
   line-height: 1.6;
   background-color: #202020;
   color: #fff;
+  padding-top: 200px;
+  padding-inline: 1rem;
+}
+
+canvas {
+  max-height: 80vh;
 }
 
 .main-card {

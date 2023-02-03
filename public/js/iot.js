@@ -1,5 +1,7 @@
 const alltime = document.getElementById("alltime");
 
+Chart.defaults.color = "white";
+
 let allTimeData = [];
 fetch("https://api.mathislambert.fr/iot/list").then((res) => {
   res.json().then((data) => {
@@ -23,12 +25,12 @@ function displayChart(data) {
 
   const config1 = {
     type: "line",
-    tension: 0.4,
     data: {
       labels: labels.map((item) => new Date(item).toISOString().slice(11, 19)),
       datasets: [
         {
           label: "Temperature",
+          tension: 0.5,
 
           data: temperature,
           backgroundColor: "rgba(255, 99, 132, 0.2)",
@@ -36,6 +38,7 @@ function displayChart(data) {
         },
         {
           label: "Humidity",
+          tension: 0.5,
 
           data: humidity,
           backgroundColor: "rgba(54, 162, 235, 0.2)",
@@ -58,7 +61,7 @@ function displayChart(data) {
         },
         title: {
           display: true,
-          text: "Données",
+          text: "Température et humidité",
           color: "white",
           font: {
             size: 20,
@@ -70,12 +73,13 @@ function displayChart(data) {
 
   const config2 = {
     type: "line",
-    tension: 0.4,
     data: {
       labels: labels.map((item) => new Date(item).toISOString().slice(11, 19)),
       datasets: [
         {
           label: "Pressure",
+          tension: 0.5,
+
           data: pressure,
           backgroundColor: "rgba(255, 206, 86, 0.2)",
           borderColor: "rgba(255, 206, 86, 1)",
@@ -97,7 +101,7 @@ function displayChart(data) {
         },
         title: {
           display: true,
-          text: "Données",
+          text: "Pression atmosphérique",
           color: "white",
           font: {
             size: 20,
