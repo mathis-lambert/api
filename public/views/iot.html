@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>URL | Mathis LAMBERT</title>
+
+    <link rel="shortcut icon" href="images/favicon.png" type="image/png" />
+
+    <link href="style/style.css" rel="stylesheet" type="text/css" />
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.2.0/chart.min.js"
+      integrity="sha512-qKyIokLnyh6oSnWsc5h21uwMAQtljqMZZT17CIMXuCQNIfFSFF4tJdMOaJHL9fQdJUANid6OB6DRR0zdHrbWAw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+  </head>
+  <body>
+    <div class="background">
+      <div class="background__gradient">
+        <div class="gradient el-1 primary"></div>
+        <div class="gradient el-2 secondary"></div>
+        <div class="gradient el-3 tertiary"></div>
+        <div class="gradient el-4 primary"></div>
+        <div class="gradient el-5 secondary"></div>
+        <div class="gradient el-6 tertiary"></div>
+        <div class="gradient el-7 primary"></div>
+        <div class="gradient el-8 secondary"></div>
+        <div class="gradient el-9 tertiary"></div>
+      </div>
+    </div>
+
+    <header></header>
+    <script>
+      // include ex.html
+      fetch("includes/header.html")
+        .then((response) => response.text())
+        .then((html) => {
+          document.querySelector("header").innerHTML = html;
+        });
+    </script>
+
+    <div class="main-card">
+      <h1>Service IoT - Chambre Mathis</h1>
+      <p>
+        Ce service permet de récupérer les données de ma chambre (température,
+        humidité, pression, etc.)
+      </p>
+      <br />
+      <canvas id="alltime"></canvas>
+    </div>
+
+    <script src="js/iot.js"></script>
+  </body>
+</html>

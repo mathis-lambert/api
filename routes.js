@@ -61,19 +61,24 @@ module.exports = (app) => {
     });
   });
 
-  app.get("/iot/last", (req, res, next) => {
-    IoTSchema.findOne({}, {}, { sort: { timestamp: -1 } }, (err, data) => {
-      if (err) {
-        console.error(err);
-        res.status(500).json({ error: "Server error" });
-      } else {
-        if (data) {
-          res.json(data);
+  app.get("/iot/last", async (req, res, next) => {
+    await IoTSchema.findOne(
+      {},
+      {},
+      { sort: { timestamp: -1 } },
+      (err, data) => {
+        if (err) {
+          console.error(err);
+          res.status(500).json({ error: "Server error" });
         } else {
-          res.status(404).json({ error: "No data found" });
+          if (data) {
+            res.json(data);
+          } else {
+            res.status(404).json({ error: "No data found" });
+          }
         }
       }
-    });
+    );
   });
 
   app.get("/iot", (req, res, next) => {
