@@ -28,7 +28,14 @@ module.exports = (app) => {
     let data = { timestamp: Date.now(), ...req.body };
     console.debug(data);
 
-    let newIoT = new IoTSchema(data);
+    let newIoT = new IoTSchema({
+      timestamp: data.timestamp,
+      values: {
+        temperature: data.temp,
+        humidity: data.hum,
+        pressure: data.pressure,
+      },
+    });
     newIoT.save((err, data) => {
       if (err) {
         console.error(err);
