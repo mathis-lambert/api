@@ -48,7 +48,7 @@ function displayChart(data) {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: true,
       elements: {
         point: {
           radius: 0,
@@ -88,7 +88,7 @@ function displayChart(data) {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: true,
       elements: {
         point: {
           radius: 0,
