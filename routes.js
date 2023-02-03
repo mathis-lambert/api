@@ -6,6 +6,7 @@ const validUrl = require("valid-url");
 const shortId = require("shortid");
 
 const urlSchema = require("./schemas");
+const IoTSchema = require("./schemas");
 
 module.exports = (app) => {
   ///////////////////////////////////////////////////////////
@@ -25,12 +26,27 @@ module.exports = (app) => {
 
   app.post("/", (req, res, next) => {
     let data = { timestamp: Date.now(), ...req.body };
-    console.debug(data);
+    let newIoT = new IoTSchema(data);
+    newIoT.save((err, data) => {});
   });
 
   // Serve static files
   app.get("/url", (req, res, next) => {
     res.sendFile(path.join(public, "/views/url.html"));
+  });
+
+  app.get("/iot", (req, res, next) => {
+    let allData = [];
+    IoTSchema.find({}, (err, data) => {
+      if (err) {
+        console.error(err);
+      } else {
+        data.forEach((item) => {
+          allData.push(item);
+        });
+        res.json(allData);
+      }
+    });
   });
 
   // Create short URL from original URL
