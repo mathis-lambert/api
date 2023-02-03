@@ -9,13 +9,6 @@
     <link rel="shortcut icon" href="images/favicon.png" type="image/png" />
 
     <link href="style/style.css" rel="stylesheet" type="text/css" />
-
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.2.0/chart.min.js"
-      integrity="sha512-qKyIokLnyh6oSnWsc5h21uwMAQtljqMZZT17CIMXuCQNIfFSFF4tJdMOaJHL9fQdJUANid6OB6DRR0zdHrbWAw=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    ></script>
   </head>
   <body>
     <div class="background">
@@ -42,16 +35,18 @@
         });
     </script>
 
-    <div class="main-card">
+    <div class="main-card" style="height: auto">
       <h1>Service IoT - Chambre Mathis</h1>
       <p>
         Ce service permet de récupérer les données de ma chambre (température,
         humidité, pression, etc.)
       </p>
       <br />
-      <canvas id="alltime"></canvas>
+      <canvas id="alltime1"></canvas>
+      <canvas id="alltime2"></canvas>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/iot.js"></script>
   </body>
 </html>
