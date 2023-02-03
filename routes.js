@@ -37,7 +37,7 @@ module.exports = (app) => {
       if (err) {
         console.error(err);
       } else {
-        res.json(data);
+        console.debug(data);
       }
     });
   });
