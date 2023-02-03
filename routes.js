@@ -31,9 +31,9 @@ module.exports = (app) => {
     let newIoT = new IoTSchema({
       timestamp: data.timestamp,
       values: {
-        temperature: data.temp,
-        humidity: data.hum,
-        pressure: data.pressure,
+        temperature: data.values.temp,
+        humidity: data.values.hum,
+        pressure: data.values.pressure,
       },
     });
     newIoT.save((err, data) => {
