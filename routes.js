@@ -23,6 +23,11 @@ module.exports = (app) => {
     res.sendFile(path.join(public, "/views/index.html"));
   });
 
+  app.post("/", (req, res, next) => {
+    console.debug(req.body.url);
+    res.json({ content: "Hello World" });
+  });
+
   // Serve static files
   app.get("/url", (req, res, next) => {
     res.sendFile(path.join(public, "/views/url.html"));
