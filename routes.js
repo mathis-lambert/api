@@ -26,6 +26,8 @@ module.exports = (app) => {
 
   app.post("/", (req, res, next) => {
     let data = { timestamp: Date.now(), ...req.body };
+    console.debug(data);
+
     let newIoT = new IoTSchema(data);
     newIoT.save((err, data) => {
       if (err) {
