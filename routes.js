@@ -21,7 +21,7 @@ module.exports = (app) => {
   ///////////////////////////////////////////////////////////
   app.get("/", (req, res, next) => {
     res.sendFile(path.join(public, "/views/index.html"));
-    console.log(req.secure);
+    res.redirect("https://api.mathislambert.fr");
   });
 
   app.post("/", (req, res, next) => {
