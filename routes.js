@@ -21,12 +21,7 @@ module.exports = (app) => {
   ///////////////////////////////////////////////////////////
   app.get("/", (req, res, next) => {
     res.sendFile(path.join(public, "/views/index.html"));
-    // redirect to https
-    if (req.headers["x-forwarded-proto"] !== "https") {
-      res.redirect("https://api.mathislambert.fr" + req.url);
-    } else {
-      next();
-    }
+    console.log(req.secure);
   });
 
   app.post("/", (req, res, next) => {
