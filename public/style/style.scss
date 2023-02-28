@@ -26,10 +26,6 @@ body {
   padding-inline: 1rem;
 }
 
-canvas {
-  height: 80vh;
-}
-
 .main-card {
   // card position
   position: absolute;
@@ -51,6 +47,10 @@ canvas {
   display: flex;
   flex-direction: column;
   align-items: center;
+
+  &.home {
+    height: fit-content;
+  }
 
   transition: all 0.3s ease;
   overflow: hidden;

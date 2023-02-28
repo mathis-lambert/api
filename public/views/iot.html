@@ -9,6 +9,69 @@
     <link rel="shortcut icon" href="images/favicon.png" type="image/png" />
 
     <link href="style/style.css" rel="stylesheet" type="text/css" />
+
+    <style>
+      .button_container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .button {
+        background-color: #134359;
+        border: none;
+        border-radius: 10px;
+        color: white;
+        padding: clamp(calc(0.5vw + 0.5vmin), 1rem, 1rem);
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: clamp(calc(0.5vw + 0.5vmin), 1rem, 1rem);
+        margin: 4px 2px;
+        cursor: pointer;
+
+        transition: 0.3s;
+      }
+
+      .button:hover {
+        background-color: #1f6f7d;
+      }
+
+      .current {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .current > div {
+        width: 25%;
+        flex: 1;
+        margin: 0.5rem;
+        background-color: #134359;
+        border-radius: 10px;
+        padding: 0.7rem;
+        color: white;
+
+        transition: 0.3s;
+
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      h2 {
+        text-align: center;
+        margin: 0;
+        font-size: clamp(calc(0.5vw + 0.5vmin), 1rem, 1rem);
+      }
+
+      canvas {
+        width: 100%;
+        max-height: clamp(calc(50vw + 10vmin), 30rem, 30rem);
+        aspect-ratio: 16 / 9;
+      }
+    </style>
   </head>
   <body>
     <div class="background">
@@ -41,6 +104,29 @@
       humidité, pression, etc.)
     </p>
     <br />
+    <h2>Données actuelles</h2>
+    <div class="current">
+      <div class="current__temperature">
+        <h2>Température</h2>
+        <p id="temperature"></p>
+      </div>
+      <div class="current__humidity">
+        <h2>Humidité</h2>
+        <p id="humidity"></p>
+      </div>
+      <div class="current__pressure">
+        <h2>Pression</h2>
+        <p id="pressure"></p>
+      </div>
+    </div>
+    <div class="button_container">
+      <button class="button" id="refresh">Rafraichir</button>
+      <button class="button" id="alltime">Tout afficher</button>
+      <button class="button" id="lasthour">Dernière heure</button>
+      <button class="button" id="lastday">Dernier jour</button>
+      <button class="button" id="lastweek">Dernière semaine</button>
+      <button class="button" id="lastmonth">Dernier mois</button>
+    </div>
     <canvas id="alltime1"></canvas>
     <canvas id="alltime2"></canvas>
 

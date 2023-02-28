@@ -5,8 +5,8 @@ const dns = require("node:dns");
 const validUrl = require("valid-url");
 const shortId = require("shortid");
 
-const urlSchema = require("./schemas");
-const IoTSchema = require("./schemas");
+const urlSchema = require("./schemas").model("urlModel");
+const IoTSchema = require("./schemas").model("IoTModel");
 
 module.exports = (app) => {
   ///////////////////////////////////////////////////////////
@@ -61,24 +61,38 @@ module.exports = (app) => {
     });
   });
 
-  app.get("/iot/last", async (req, res, next) => {
-    await IoTSchema.findOne(
-      {},
-      {},
-      { sort: { timestamp: -1 } },
+  app.get("/iot/list/:minDate-:maxDate", (req, res, next) => {
+    let allData = [];
+    IoTSchema.find(
+      {
+        timestamp: {
+          $gte: req.params.minDate,
+          $lte: req.params.maxDate,
+        },
+      },
       (err, data) => {
         if (err) {
           console.error(err);
-          res.status(500).json({ error: "Server error" });
         } else {
-          if (data) {
-            res.json(data);
-          } else {
-            res.status(404).json({ error: "No data found" });
-          }
+          data.forEach((item) => {
+            allData.push(item);
+          });
+          res.json(allData);
         }
       }
     );
+  });
+
+  app.get("/iot/last", (req, res, next) => {
+    IoTSchema.findOne({}, {}, { sort: { timestamp: -1 } }, (err, data) => {
+      if (err) {
+        console.error(err);
+      } else {
+        res.json(data);
+      }
+
+      // console.log(data);
+    });
   });
 
   app.get("/iot", (req, res, next) => {
@@ -93,13 +107,13 @@ module.exports = (app) => {
     const urlId = shortId.generate();
 
     if (!validUrl.isWebUri(url)) {
-      res.status(404).json({ error: "invalid url" });
+      res.status(404).json({ error: "isWebUri error" });
     } else {
       let urlObj = new URL(url);
       let hostname = urlObj.hostname;
       dns.lookup(hostname, async (err, address, family) => {
         if (err) {
-          res.json({ error: "invalid url" });
+          res.json({ error: "DNS Lookup error" });
         } else {
           try {
             let findOne = await urlSchema.findOne({ original_url: url });
@@ -109,10 +123,13 @@ module.exports = (app) => {
                 short_url: findOne.short_url,
               });
             } else {
-              findOne = new urlSchema({ original_url: url, short_url: urlId });
+              findOne = await new urlSchema({
+                original_url: url,
+                short_url: urlId,
+              });
               await findOne.save((err, data) => {
                 if (err) {
-                  res.json({ error: "invalid url" });
+                  res.json({ error: "Save to mongoDB error" });
                 } else {
                   res.json({
                     original_url: data.original_url,
@@ -123,7 +140,7 @@ module.exports = (app) => {
             }
           } catch (err) {
             console.error(err);
-            res.status(500).json({ error: "invalid url" });
+            res.status(500).json({ error: "Server error" });
           }
         }
       });

@@ -37,7 +37,7 @@ submit.addEventListener("click", async () => {
 function computeResult(data) {
   card.classList.add("result");
   if (data.error) {
-    result.value = "Une erreur est survenue :" + err;
+    result.value = "Une erreur est survenue :" + data.error;
   } else {
     result.value = "api.mathislambert.fr/url/" + data.short_url;
     document.querySelector("#accessLink").href = "https://" + result.value;
