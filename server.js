@@ -59,7 +59,12 @@ const logFilePath = path.join(__dirname, "access.log");
 const accessLogStream = fs.createWriteStream(logFilePath, { flags: "a" });
 
 // Middleware pour logger les adresses IP
-app.use(morgan("combined", { stream: accessLogStream }));
+app.use(
+  morgan(
+    ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"',
+    { stream: accessLogStream }
+  )
+);
 
 // Liste des adresses IP à bloquer
 const blockedIPs = ["45.88.67.94", "45.139.105.222"];
