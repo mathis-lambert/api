@@ -56,7 +56,7 @@ app.use(cors());
 // Limit the number of requests from the same IP address
 const limiter = rateLimit({
   windowMs: 30000, // 30 seconds
-  max: 10, // limit each IP to 10 requests per windowMs
+  max: 100, // limit each IP to 10 requests per windowMs
 });
 app.use(limiter);
 
@@ -102,18 +102,7 @@ app.use((req, res, next) => {
     res.status(403).send("Accès interdit");
   } else {
     next();
-  }
-});
-
-// Middleware pour rediriger toutes les requêtes HTTP vers HTTPS sauf celles de 109.208.22.133
-app.use((req, res, next) => {
-  if (
-    req.headers["x-forwarded-proto"] !== "https" &&
-    req.ip !== "109.208.22.133"
-  ) {
-    return res.redirect(`https://${req.hostname}${req.url}`);
-  }
-  next();
+}
 });
 
 ///////////////////////////////////////////////////////////
