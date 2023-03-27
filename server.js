@@ -50,6 +50,17 @@ app.use(bodyParser.json());
 // Handle cross-site request
 app.use(cors());
 
+// Middleware pour bloquer les requêtes provenant d'une adresse IP spécifique
+app.use((req, res, next) => {
+  const blockedIP = "45.88.67.94"; // Adresse IP du serveur à bloquer
+  const clientIP = req.ip; // Adresse IP du client qui effectue la demande
+  if (clientIP === blockedIP) {
+    res.status(403).send("Accès interdit");
+  } else {
+    next();
+  }
+});
+
 ///////////////////////////////////////////////////////////
 //  Configure Routes
 ///////////////////////////////////////////////////////////
