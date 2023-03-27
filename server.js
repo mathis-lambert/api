@@ -58,7 +58,20 @@ const logFilePath = path.join(__dirname, "access.log");
 // Créer un flux d'écriture pour le fichier journal
 const accessLogStream = fs.createWriteStream(logFilePath, { flags: "a" });
 
-// Middleware pour logger les adresses IP
+// Configuration de morgan pour récupérer l'adresse IP à partir des en-têtes X-Forwarded-For ou X-Real-IP si elles sont disponibles
+morgan.token("remote-addr", (req) => {
+  const forwardedFor = req.headers["x-forwarded-for"];
+  if (forwardedFor) {
+    return forwardedFor.split(",")[0];
+  }
+  const realIp = req.headers["x-real-ip"];
+  if (realIp) {
+    return realIp;
+  }
+  return req.ip;
+});
+
+// Configuration de morgan
 app.use(
   morgan(
     ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"',
