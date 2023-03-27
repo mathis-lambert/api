@@ -92,6 +92,17 @@ app.use((req, res, next) => {
   }
 });
 
+// Middleware pour rediriger toutes les requêtes HTTP vers HTTPS sauf celles de 109.208.22.133
+app.use((req, res, next) => {
+  if (
+    req.headers["x-forwarded-proto"] !== "https" &&
+    req.ip !== "109.208.22.133"
+  ) {
+    return res.redirect(`https://${req.hostname}${req.url}`);
+  }
+  next();
+});
+
 ///////////////////////////////////////////////////////////
 //  Configure Routes
 ///////////////////////////////////////////////////////////
