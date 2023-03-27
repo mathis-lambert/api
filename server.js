@@ -5,6 +5,7 @@ const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const rateLimit = require("express-rate-limit");
 const mongoose = require("mongoose");
 const morgan = require("morgan");
 const fs = require("fs");
@@ -52,6 +53,13 @@ app.use(bodyParser.json());
 // Handle cross-site request
 app.use(cors());
 
+// Limit the number of requests from the same IP address
+const limiter = rateLimit({
+  windowMs: 30000, // 30 seconds
+  max: 10, // limit each IP to 10 requests per windowMs
+});
+app.use(limiter);
+
 // Emplacement du fichier journal
 const logFilePath = path.join(__dirname, "access.log");
 
@@ -80,7 +88,12 @@ app.use(
 );
 
 // Liste des adresses IP à bloquer
-const blockedIPs = ["45.88.67.94", "45.139.105.222"];
+const blockedIPs = [
+  "45.88.67.94",
+  "45.139.105.222",
+  "133.32.208.210",
+  "45.55.193.211",
+];
 
 // Middleware pour bloquer les requêtes provenant des adresses IP spécifiées
 app.use((req, res, next) => {
