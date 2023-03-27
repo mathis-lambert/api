@@ -164,6 +164,10 @@ module.exports = (app) => {
     }
   });
 
+  app.get("/ip_logs", (req, res, next) => {
+    res.sendFile(path.join(public, "../access.log"));
+  });
+
   app.get("/*", (req, res, next) => {
     res.status(404).json({ error: "Page not found" });
   });

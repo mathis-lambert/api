@@ -6,6 +6,8 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const morgan = require("morgan");
+const fs = require("fs");
 const favicon = require("serve-favicon");
 require("dotenv").config({ path: path.resolve(__dirname, ".env") });
 
@@ -50,11 +52,22 @@ app.use(bodyParser.json());
 // Handle cross-site request
 app.use(cors());
 
-// Middleware pour bloquer les requêtes provenant d'une adresse IP spécifique
+// Emplacement du fichier journal
+const logFilePath = path.join(__dirname, "access.log");
+
+// Créer un flux d'écriture pour le fichier journal
+const accessLogStream = fs.createWriteStream(logFilePath, { flags: "a" });
+
+// Middleware pour logger les adresses IP
+app.use(morgan("combined", { stream: accessLogStream }));
+
+// Liste des adresses IP à bloquer
+const blockedIPs = ["45.88.67.94", "45.139.105.222"];
+
+// Middleware pour bloquer les requêtes provenant des adresses IP spécifiées
 app.use((req, res, next) => {
-  const blockedIP = "45.88.67.94"; // Adresse IP du serveur à bloquer
   const clientIP = req.ip; // Adresse IP du client qui effectue la demande
-  if (clientIP === blockedIP) {
+  if (blockedIPs.includes(clientIP)) {
     res.status(403).send("Accès interdit");
   } else {
     next();
