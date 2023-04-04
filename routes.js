@@ -95,6 +95,11 @@ module.exports = (app) => {
     });
   });
 
+  app.get("/.well-known/acme-challenge/:id", (req, res, next) => {
+    let id = req.params.id;
+    res.sendFile(path.join(public, `/.well-known/acme-challenge/${id}`));
+  });
+
   app.get("/iot", (req, res, next) => {
     res.sendFile(path.join(public, "/views/iot.html"));
   });
