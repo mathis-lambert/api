@@ -6,6 +6,7 @@ Welcome to the `api` repository! This repository hosts the core API infrastructu
 
 - **FastAPI**: A modern, fast (high-performance) web framework for building APIs with Python 3.13 based on standard Python type hints.
 - **MongoDB**: A NoSQL database used for storing application data, offering flexibility and scalability.
+- **Qdrant**: A vector database used for implementing Retrieval-Augmented Generation (RAG) features, enhancing information retrieval capabilities.
 - **LLM Integration**: Routes for calling the OpenAI API to leverage Large Language Models (LLMs) for various NLP tasks.
 - **Versioning**: A systematic versioning approach with endpoints like `/v1`, `/v2`, etc., to manage API changes and ensure backward compatibility.
 
@@ -15,6 +16,7 @@ Welcome to the `api` repository! This repository hosts the core API infrastructu
 
 - Python 3.13
 - MongoDB instance
+- Qdrant instance
 - OpenAI API key
 
 ### Installation
@@ -40,6 +42,7 @@ Welcome to the `api` repository! This repository hosts the core API infrastructu
    Create a `.env` file in the root directory and add the following variables:
    ```
    MONGODB_URI=your_mongodb_connection_string
+   QDRANT_URI=your_qdrant_connection_string
    OPENAI_API_KEY=your_openai_api_key
    ```
 
@@ -70,6 +73,9 @@ The API will be accessible at `http://127.0.0.1:3001`.
 - **Data Routes**:
   - `GET /v1/data`: Retrieve data from MongoDB.
   - `POST /v1/data`: Insert data into MongoDB.
+
+- **RAG Features**:
+  - `POST /v1/rag/query`: Query the Qdrant database for enhanced information retrieval using RAG.
 
 ## 🤝 Contributing
 
