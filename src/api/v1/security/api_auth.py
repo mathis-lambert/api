@@ -85,7 +85,7 @@ class APIAuth:
             if username is None:
                 raise AuthError("Token invalide : sujet manquant")
         except PyJWTError:
-            raise AuthError("Token invalide ou expiré")
+            raise AuthError("Token invalide ou expiré") from None
         user = await self.get_user(username)
         if user is None:
             raise AuthError("Utilisateur introuvable")
@@ -157,7 +157,7 @@ async def get_current_user(
         user = await auth.verify_token(token)
     except Exception as e:
         logger.error("Erreur lors de la vérification du token: %s", e)
-        raise HTTPException(status_code=401, detail="Token invalide ou expiré")
+        raise HTTPException(status_code=401, detail="Token invalide ou expiré") from e
     return user
 
 
@@ -171,5 +171,5 @@ async def ensure_valid_token(
         await auth.verify_token(token)
     except Exception as e:
         logger.error("Erreur lors de la vérification du token: %s", e)
-        raise HTTPException(status_code=401, detail="Token invalide ou expiré")
+        raise HTTPException(status_code=401, detail="Token invalide ou expiré") from e
     return True

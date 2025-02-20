@@ -42,7 +42,7 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from e
 
 
 @router.post(
@@ -61,7 +61,7 @@ async def register(
         )
         return {"msg": "Utilisateur enregistré avec succès", "user": new_user}
     except AuthError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
 
 @router.get(
@@ -78,4 +78,4 @@ async def verify(
         user = await auth.verify_token(token)
         return {"msg": "Token valide", "user": user}
     except AuthError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e)) from e

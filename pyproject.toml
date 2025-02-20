@@ -4,25 +4,25 @@ version = "0.1.0"
 description = "API project using FastAPI, Qdrant, and MongoDB with Docker"
 requires-python = ">=3.13"
 authors = [
-  { name = "Mathis LAMBERT", email = "mathislambert.dev@gmail.com" }
+    { name = "Mathis LAMBERT", email = "mathislambert.dev@gmail.com" }
 ]
 dependencies = [
-  "fastapi[standard]>=0.115.8",
-  "qdrant-client>=1.13.2",
-  "motor>=3.7.0",
-  "pymongo>=4.3.3",
-  "uvicorn>=0.34.0",
-  "mistralai>=1.5.0",
-  "PyJWT>=2.10.1"
+    "fastapi[standard]>=0.115.8",
+    "qdrant-client>=1.13.2",
+    "motor>=3.7.0",
+    "pymongo>=4.3.3",
+    "uvicorn>=0.34.0",
+    "mistralai>=1.5.0",
+    "PyJWT>=2.10.1"
 ]
 
 [project.optional-dependencies]
 dev = [
-  "black>=25.1.0,<26.0.0",
-  "flake8>=7.1.2,<7.2.0",
-  "ruff>=0.0.283,<0.0.300",
-  "isort>=5.12.0,<6.0.0",
-  "mypy>=1.5.0,<1.6.0"
+    "black>=25.1.0,<26.0.0",
+    "flake8>=7.1.2,<7.2.0",
+    "ruff>=0.0.283,<0.0.300",
+    "isort>=5.12.0,<6.0.0",
+    "mypy>=1.5.0,<1.6.0"
 ]
 
 [build-system]
@@ -53,16 +53,16 @@ extend-ignore = ["E203", "W503"]
 
 [tool.ruff]
 line-length = 88
-select = ["A", "B", "C", "D", "E", "F", "I", "N", "Q", "S", "T", "W"]
-ignore = ["E203"]
+select = ["A", "B", "C", "E", "F", "I", "N", "Q", "T", "W"]
+ignore = ["A002", "A003", "B008", "E203", "E501"]
 exclude = [
-  ".git",
-  "__pycache__",
-  ".mypy_cache",
-  ".tox",
-  ".venv",
-  "build",
-  "dist"
+    ".git",
+    "__pycache__",
+    ".mypy_cache",
+    ".tox",
+    ".venv",
+    "build",
+    "dist"
 ]
 
 [tool.isort]
@@ -72,6 +72,7 @@ multi_line_output = 3
 include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
+ensure_newline_before_comments = true
 
 [tool.mypy]
 python_version = "3.13"

@@ -41,12 +41,12 @@ async def completions(
         await text_generation.mistralai_service.check_model(chat_request.model)
     except ValueError as e:
         logger.error("Erreur lors du chargement du modèle : %s", e)
-        raise HTTPException(status_code=404, detail="Modèle non trouvé")
+        raise HTTPException(status_code=404, detail="Modèle non trouvé") from e
     except ConnectionError as e:
         logger.error("Erreur lors de la connexion au service : %s", e)
         raise HTTPException(
             status_code=503, detail="Service indisponible ou modèle non trouvé"
-        )
+        ) from e
 
     # Formatage des messages
     messages = text_generation.inference_utils.format_messages(

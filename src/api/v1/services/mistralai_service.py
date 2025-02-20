@@ -48,7 +48,7 @@ class MistralAIService:
             return model
         except Exception as e:
             logger.error(f"An error occurred while checking model : {e}")
-            raise ConnectionError(f"An error occurred while checking model : {e}")
+            raise ConnectionError(f"An error occurred while checking model : {e}") from e
 
     async def list_models(self):
         return await self.mistral_client.models.list_async()
