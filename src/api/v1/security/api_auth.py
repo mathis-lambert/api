@@ -1,8 +1,8 @@
 import hashlib
 import hmac
 import os
-from datetime import datetime, timedelta, UTC
-from typing import Optional, Dict, Any
+from datetime import UTC, datetime, timedelta
+from typing import Any, Dict, Optional
 
 import jwt
 from dotenv import load_dotenv
@@ -10,6 +10,7 @@ from fastapi import Depends, HTTPException, Request
 from jwt.exceptions import PyJWTError
 
 from api.utils import CustomLogger
+
 from .oauth2_scheme import oauth2_scheme
 
 logger = CustomLogger.get_logger(__name__)
@@ -19,6 +20,7 @@ load_dotenv()
 
 class AuthError(Exception):
     """Exception personnalisée pour les erreurs d'authentification."""
+
     pass
 
 
@@ -49,9 +51,10 @@ class APIAuth:
             raise AuthError("Mot de passe incorrect")
         return user
 
-    def create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None) -> str:
-        """
-        Crée un token JWT contenant les données transmises,
+    def create_access_token(
+        self, data: dict, expires_delta: Optional[timedelta] = None
+    ) -> str:
+        """Crée un token JWT contenant les données transmises,
         avec une expiration définie.
         """
         to_encode = data.copy()
@@ -60,18 +63,20 @@ class APIAuth:
         token = jwt.encode(to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
         return token
 
-    async def generate_token(self, username: str, password: str, expires: timedelta) -> Dict[str, Any]:
-        """
-        Authentifie l'utilisateur et renvoie un dictionnaire contenant
+    async def generate_token(
+        self, username: str, password: str, expires: timedelta
+    ) -> Dict[str, Any]:
+        """Authentifie l'utilisateur et renvoie un dictionnaire contenant
         le token d'accès et le type de token.
         """
         user = await self.authenticate_user(username, password)
-        token = self.create_access_token(data={"sub": user["username"]}, expires_delta=expires)
+        token = self.create_access_token(
+            data={"sub": user["username"]}, expires_delta=expires
+        )
         return {"access_token": token, "token_type": "bearer"}
 
     async def verify_token(self, token: str) -> Dict[str, Any]:
-        """
-        Décode et vérifie le token JWT. Retourne l'utilisateur associé
+        """Décode et vérifie le token JWT. Retourne l'utilisateur associé
         ou lève une AuthError en cas de problème.
         """
         try:
@@ -86,7 +91,9 @@ class APIAuth:
             raise AuthError("Utilisateur introuvable")
         return self.mongo_client.serialize(user)
 
-    async def register(self, username: str, password: str, email: str) -> Dict[str, Any]:
+    async def register(
+        self, username: str, password: str, email: str
+    ) -> Dict[str, Any]:
         """Crée un nouvel utilisateur dans la base en mémoire."""
         user = await self.get_user(username)
         if user:
@@ -110,26 +117,27 @@ class APIAuth:
 
     @staticmethod
     def hash_password(password: str) -> str:
-        """
-        Hash le mot de passe en utilisant pbkdf2_hmac.
+        """Hash le mot de passe en utilisant pbkdf2_hmac.
         On stocke le sel et le hash sous la forme 'sel$hash'.
         """
         salt = os.urandom(16)
-        hash_bytes = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100_000)
+        hash_bytes = hashlib.pbkdf2_hmac(
+            "sha256", password.encode("utf-8"), salt, 100_000
+        )
         return salt.hex() + "$" + hash_bytes.hex()
 
     @staticmethod
     def verify_password(password: str, hashed: str) -> bool:
-        """
-        Vérifie le mot de passe en recalculant le hash avec le sel stocké.
-        """
+        """Vérifie le mot de passe en recalculant le hash avec le sel stocké."""
         try:
             salt_hex, hash_hex = hashed.split("$")
         except ValueError:
             return False
         salt = bytes.fromhex(salt_hex)
         expected_hash = bytes.fromhex(hash_hex)
-        new_hash = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100_000)
+        new_hash = hashlib.pbkdf2_hmac(
+            "sha256", password.encode("utf-8"), salt, 100_000
+        )
         return hmac.compare_digest(new_hash, expected_hash)
 
 
@@ -139,9 +147,10 @@ def get_auth(request: Request):
     return auth_instance
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme), auth: APIAuth = Depends(get_auth)):
-    """
-    Dépendance qui vérifie le token via l'instance APIAuth.
+async def get_current_user(
+    token: str = Depends(oauth2_scheme), auth: APIAuth = Depends(get_auth)
+):
+    """Dépendance qui vérifie le token via l'instance APIAuth.
     En cas d'erreur, une HTTPException 401 est levée.
     """
     try:
@@ -152,9 +161,10 @@ async def get_current_user(token: str = Depends(oauth2_scheme), auth: APIAuth = 
     return user
 
 
-async def ensure_valid_token(token: str = Depends(oauth2_scheme), auth: APIAuth = Depends(get_auth)):
-    """
-    Dépendance qui vérifie le token via l'instance APIAuth.
+async def ensure_valid_token(
+    token: str = Depends(oauth2_scheme), auth: APIAuth = Depends(get_auth)
+):
+    """Dépendance qui vérifie le token via l'instance APIAuth.
     En cas d'erreur, une HTTPException 401 est levée.
     """
     try:

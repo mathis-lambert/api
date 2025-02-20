@@ -11,11 +11,11 @@ load_dotenv()
 class MongoDBConnector:
     def __init__(self):
         # Récupérer les informations depuis les variables d'environnement
-        self.host = os.getenv('MONGODB_HOST', 'localhost')
-        self.port = int(os.getenv('MONGODB_PORT', 27017))
-        self.username = os.getenv('MONGODB_USERNAME', 'root')
-        self.password = os.getenv('MONGODB_PASSWORD', 'example')
-        self.database = os.getenv('MONGODB_DATABASE', 'api-database')
+        self.host = os.getenv("MONGODB_HOST", "localhost")
+        self.port = int(os.getenv("MONGODB_PORT", 27017))
+        self.username = os.getenv("MONGODB_USERNAME", "root")
+        self.password = os.getenv("MONGODB_PASSWORD", "example")
+        self.database = os.getenv("MONGODB_DATABASE", "api-database")
 
         # Créer le client MongoDB
         self.client = AsyncIOMotorClient(
@@ -36,8 +36,8 @@ class MongoDBConnector:
         if document is None:
             return None
 
-        if '_id' in document:
-            document['_id'] = str(document['_id'])
+        if "_id" in document:
+            document["_id"] = str(document["_id"])
 
         return document
 
@@ -53,8 +53,8 @@ class MongoDBConnector:
     async def insert_one(self, collection_name, document):
         collection = self.get_database()[collection_name]
 
-        if 'created_at' not in document:
-            document['created_at'] = datetime.now(timezone.utc)
+        if "created_at" not in document:
+            document["created_at"] = datetime.now(timezone.utc)
 
         result = await collection.insert_one(document)
         return result.inserted_id
@@ -63,8 +63,8 @@ class MongoDBConnector:
         collection = self.get_database()[collection_name]
 
         for document in documents:
-            if 'created_at' not in document:
-                document['created_at'] = datetime.now(timezone.utc)
+            if "created_at" not in document:
+                document["created_at"] = datetime.now(timezone.utc)
 
         result = await collection.insert_many(documents)
         return result.inserted_ids
@@ -72,11 +72,11 @@ class MongoDBConnector:
     async def update_one(self, collection_name, query, update):
         collection = self.get_database()[collection_name]
 
-        if '$set' not in update:
-            update = {'$set': update}
+        if "$set" not in update:
+            update = {"$set": update}
 
-        if 'updated_at' not in update:
-            update['$set']['updated_at'] = datetime.now(timezone.utc)
+        if "updated_at" not in update:
+            update["$set"]["updated_at"] = datetime.now(timezone.utc)
 
         result = await collection.update_one(query, update)
         return result.modified_count
@@ -84,11 +84,11 @@ class MongoDBConnector:
     async def update_many(self, collection_name, query, update):
         collection = self.get_database()[collection_name]
 
-        if '$set' not in update:
-            update = {'$set': update}
+        if "$set" not in update:
+            update = {"$set": update}
 
-        if 'updated_at' not in update['$set']:
-            update['$set']['updated_at'] = datetime.now(timezone.utc)
+        if "updated_at" not in update["$set"]:
+            update["$set"]["updated_at"] = datetime.now(timezone.utc)
 
         result = await collection.update_many(query, update)
         return result.modified_count

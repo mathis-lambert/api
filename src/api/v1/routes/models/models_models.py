@@ -1,4 +1,7 @@
-from mistralai.models import RetrieveModelV1ModelsModelIDGetResponseRetrieveModelV1ModelsModelIDGet, ModelList
+from mistralai.models import (
+    ModelList,
+    RetrieveModelV1ModelsModelIDGetResponseRetrieveModelV1ModelsModelIDGet,
+)
 from pydantic import BaseModel
 
 

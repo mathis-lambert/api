@@ -30,7 +30,7 @@ app = FastAPI(
     openapi_url="/api/v1/openapi.json",  # Chemin personnalisé pour le fichier OpenAPI
     docs_url="/swagger",  # Chemin personnalisé pour la documentation Swagger UI
     redoc_url="/api-docs",  # Chemin personnalisé pour la documentation ReDoc
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Middleware
@@ -49,7 +49,9 @@ MAINTENANCE_MODE = os.getenv("MAINTENANCE_MODE", "false").lower() == "true"
 @app.middleware("http")
 async def check_maintenance(request, call_next):
     if MAINTENANCE_MODE:
-        return JSONResponse(status_code=503, content={"detail": "Service en maintenance"})
+        return JSONResponse(
+            status_code=503, content={"detail": "Service en maintenance"}
+        )
     response = await call_next(request)
     return response
 
@@ -62,7 +64,8 @@ app.include_router(v1_router, prefix="/v1", tags=["v1"])
 def read_root():
     return {
         "message": "Welcome to my FastAPI application! 🚀 You can check the redoc documentation at /api-docs and the "
-                   "swagger documentation at /swagger."}
+        "swagger documentation at /swagger."
+    }
 
 
 # Gestion des erreurs
@@ -79,4 +82,6 @@ async def not_found_exception_handler(request, exc):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, reload_dirs=["/src/api"])
+    uvicorn.run(
+        "main:app", host="0.0.0.0", port=8000, reload=True, reload_dirs=["/src/api"]
+    )

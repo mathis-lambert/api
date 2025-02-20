@@ -9,10 +9,10 @@ logger = CustomLogger.get_logger(__name__)
 
 class MistralAIService:
     def __init__(self):
-        self.api_key = os.getenv('MISTRAL_API_KEY', None)
+        self.api_key = os.getenv("MISTRAL_API_KEY", None)
 
-        if self.api_key == '':
-            raise ValueError('MISTRAL_API_KEY environment variable is not set')
+        if self.api_key == "":
+            raise ValueError("MISTRAL_API_KEY environment variable is not set")
 
         self.mistral_client = Mistral(api_key=self.api_key)
 
@@ -22,7 +22,7 @@ class MistralAIService:
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
-            top_p=top_p
+            top_p=top_p,
         )
         return response.choices[0].message.content
 
@@ -32,7 +32,7 @@ class MistralAIService:
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
-            top_p=top_p
+            top_p=top_p,
         )
         async for chunk in response:
             if chunk.data.choices[0].delta.content is not None:
@@ -43,7 +43,7 @@ class MistralAIService:
             model = await self.mistral_client.models.retrieve_async(model_id=model)
 
             if model is None:
-                raise ValueError(f'Model {model} not found')
+                raise ValueError(f"Model {model} not found")
 
             return model
         except Exception as e:

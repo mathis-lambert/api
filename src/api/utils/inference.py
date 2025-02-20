@@ -4,29 +4,16 @@ class InferenceUtils:
         messages = []
 
         if prompt:
-            messages.append({
-                "role": "system",
-                "content": prompt
-            })
+            messages.append({"role": "system", "content": prompt})
 
         if history:
             for entry in history:
-                messages.append({
-                    "role": entry["role"],
-                    "content": entry["content"]
-                })
+                messages.append({"role": entry["role"], "content": entry["content"]})
 
-        messages.append({
-            "role": "user",
-            "content": input
-        })
+        messages.append({"role": "user", "content": input})
 
         return messages
 
     @staticmethod
     def format_response(response: str, job_id: str) -> dict:
-        return {
-            "response": response,
-            "job_id": job_id
-        }
-
+        return {"response": response, "job_id": job_id}
