@@ -6,8 +6,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from lm_api.databases import MongoDBConnector, QdrantConnector
-from lm_api.v1 import v1_router
+from api.databases import MongoDBConnector, QdrantConnector
+from api.v1 import v1_router
 
 load_dotenv()
 
@@ -79,4 +79,4 @@ async def not_found_exception_handler(request, exc):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, reload_dirs=["/src/lm_api"])
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, reload_dirs=["/src/api"])

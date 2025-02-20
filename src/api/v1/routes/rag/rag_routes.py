@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
-from lm_api.v1.security import ensure_valid_token
+from api.v1.security import ensure_valid_token
 
 router = APIRouter()
 

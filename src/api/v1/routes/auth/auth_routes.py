@@ -3,7 +3,7 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi import Request, Form
 
-from lm_api.v1.security import APIAuth, AuthError, oauth2_scheme
+from api.v1.security import APIAuth, AuthError, oauth2_scheme
 from .auth_models import GetTokenResponse, RegisterResponse, VerifyResponse, RegisterRequestBody
 
 router = APIRouter()

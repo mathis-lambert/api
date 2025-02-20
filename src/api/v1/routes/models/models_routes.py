@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Path
 
-from lm_api.v1.services import MistralAIService
+from api.v1.services import MistralAIService
 from .models_models import GetModelResponse, ListModelsResponse
 
 router = APIRouter()

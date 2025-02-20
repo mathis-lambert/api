@@ -1,8 +1,8 @@
 import json
 from typing import AsyncGenerator
 
-from lm_api.utils import InferenceUtils
-from lm_api.v1.services import MistralAIService
+from api.utils import InferenceUtils
+from api.v1.services import MistralAIService
 
 
 class TextGeneration:

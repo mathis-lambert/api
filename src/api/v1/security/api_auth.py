@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, Request
 from jwt.exceptions import PyJWTError
 
-from lm_api.utils import CustomLogger
+from api.utils import CustomLogger
 from .oauth2_scheme import oauth2_scheme
 
 logger = CustomLogger.get_logger(__name__)

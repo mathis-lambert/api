@@ -2,7 +2,7 @@ import os
 
 from mistralai import Mistral
 
-from lm_api.utils import CustomLogger
+from api.utils import CustomLogger
 
 logger = CustomLogger.get_logger(__name__)
 

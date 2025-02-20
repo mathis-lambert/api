@@ -4,10 +4,10 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 
-from lm_api.utils import CustomLogger, InferenceUtils
-from lm_api.v1.classes import TextGeneration
-from lm_api.v1.security import ensure_valid_token
-from lm_api.v1.services import MistralAIService
+from api.utils import CustomLogger, InferenceUtils
+from api.v1.classes import TextGeneration
+from api.v1.security import ensure_valid_token
+from api.v1.services import MistralAIService
 from .chat_models import ChatCompletionResponse, ChatCompletionsRequest
 
 logger = CustomLogger.get_logger(__name__)
