@@ -23,8 +23,8 @@ Welcome to the `api` repository! This repository hosts the core API infrastructu
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-username/api.git
-   cd api
+   git clone https://github.com/your-username/api.git self_api
+   cd self_api
    ```
 
 2. **Set Up a Virtual Environment**:

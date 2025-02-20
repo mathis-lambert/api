@@ -186,3 +186,7 @@ cython_debug/
 *.dat
 *.out
 .DS_Store
+
+# Databases
+mongodb/data/*
+qdrant/storage/*

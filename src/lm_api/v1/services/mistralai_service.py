@@ -2,14 +2,14 @@ import os
 
 from mistralai import Mistral
 
-from api.utils import CustomLogger
+from lm_api.utils import CustomLogger
 
 logger = CustomLogger.get_logger(__name__)
 
 
 class MistralAIService:
     def __init__(self):
-        self.api_key = os.getenv('MISTRAL_API_KEY', 'KfsXviumdHA7cMDxqU1GvGgAA7CHhCIR')
+        self.api_key = os.getenv('MISTRAL_API_KEY', None)
 
         if self.api_key == '':
             raise ValueError('MISTRAL_API_KEY environment variable is not set')

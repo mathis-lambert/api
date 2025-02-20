@@ -8,20 +8,17 @@ ENV PYTHONDONTWRITEBYTECODE 1
 # Définit le répertoire de travail dans le conteneur
 WORKDIR /app
 
-# Copie les fichiers de dépendances dans le conteneur
-COPY pyproject.toml poetry.lock ./
-
-# Installe Poetry
-RUN pip install poetry
+# Copie le fichier de dépendances dans le conteneur
+COPY pyproject.toml ./
 
 # Installe les dépendances du projet
-RUN poetry config virtualenvs.create false && poetry install --no-dev --no-root
+RUN pip install --no-cache-dir .
 
 # Copie le reste de l'application dans le conteneur
 COPY . .
 
 # Commande pour exécuter l'application avec Uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 # Expose le port sur lequel l'application va tourner
 EXPOSE 8000

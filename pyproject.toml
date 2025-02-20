@@ -1,5 +1,5 @@
 [project]
-name = "api"
+name = "lm_api"
 version = "0.1.0"
 description = "API project using FastAPI, Qdrant, and MongoDB with Docker"
 authors = [{ name = "Mathis LAMBERT", email = "mathislambert.dev@gmail.com" }]
@@ -9,7 +9,8 @@ dependencies = [
     "motor>=3.7.0",
     "pymongo>=4.3.3",
     "uvicorn>=0.34.0",
-    "mistralai>=1.5.0"
+    "mistralai>=1.5.0",
+    "PyJWT>=2.10.1"
 ]
 
 [project.optional-dependencies]
