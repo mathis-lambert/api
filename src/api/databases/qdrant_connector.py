@@ -1,7 +1,12 @@
 import os
+from typing import List
 
 from dotenv import load_dotenv
 from qdrant_client import AsyncQdrantClient, models
+
+from api.utils import CustomLogger
+
+logger = CustomLogger.get_logger(__name__)
 
 load_dotenv()
 
@@ -20,6 +25,17 @@ class QdrantConnector:
         # Initialiser le client Qdrant asynchrone
         self.client = AsyncQdrantClient(url=self.url, api_key=self.api_key)
 
+    async def check_connection(self):
+        """Vérifie la connexion à Qdrant de manière asynchrone.
+        :return: True si la connexion est réussie, False sinon.
+        """
+        try:
+            await self.client.get_collections()
+            return True
+        except Exception as e:
+            logger.error(f"Erreur de connexion à Qdrant: {e}")
+            return False
+
     def get_client(self):
         """Récupère le client Qdrant.
         :return: Instance du client Qdrant.
@@ -33,19 +49,96 @@ class QdrantConnector:
         collections = await self.client.get_collections()
         return collections
 
-    async def create_collection(self, collection_name, vector_size, distance="Cosine"):
+    async def get_collection(self, collection_name):
+        """Récupère les informations d'une collection spécifique dans Qdrant de manière asynchrone.
+
+        :param collection_name: Nom de la collection.
+        :return: Dictionnaire contenant les informations de la collection.
+        """
+        try:
+            return await self.client.get_collection(collection_name=collection_name)
+        except Exception as e:
+            logger.error(
+                f"Erreur lors de la récupération de la collection '{collection_name}': {e}"
+            )
+            return None
+
+    async def upsert(self, collection_name, points):
+        """Insère ou met à jour des points dans une collection Qdrant de manière asynchrone.
+
+        :param collection_name: Nom de la collection.
+        :param points: Liste de points à insérer ou mettre à jour.
+        """
+        await self.client.upsert(collection_name=collection_name, points=points)
+
+    async def batch_upsert(self, collection_name, indexes, vectors, payloads=None):
+        """Insère ou met à jour des points dans une collection Qdrant de manière asynchrone.
+
+        :param collection_name: Nom de la collection.
+        :param indexes: Liste d'index pour les points.
+        :param vectors: Liste de vecteurs à insérer ou mettre à jour.
+        :param payloads: Liste optionnelle de payloads associés aux vecteurs.
+        """
+        if payloads is None:
+            payloads = [{}] * len(vectors)
+
+        points = models.Batch(
+            ids=indexes,
+            vectors=vectors,
+            payloads=payloads,
+        )
+
+        await self.client.upsert(collection_name=collection_name, points=points)
+
+    async def create_collection(
+        self, collection_name, vector_size=1024, distance="Cosine"
+    ):
         """Crée une nouvelle collection dans Qdrant de manière asynchrone.
 
         :param collection_name: Nom de la collection.
-        :param vector_size: Taille des vecteurs de la collection.
+        :param vector_size: Taille des vecteurs de la collection (par défaut 1024).
         :param distance: Métrique de distance (par défaut "Cosine", peut être "Euclidean", etc.).
         """
-        params = models.CollectionParams(
-            vectors=models.VectorParams(size=vector_size, distance=distance)
+        if distance not in ["Cosine", "Euclidean"]:
+            raise ValueError("La distance doit être 'Cosine' ou 'Euclidean'.")
+
+        if await self.client.create_collection(
+            vectors_config=models.VectorParams(size=vector_size, distance=distance),
+            collection_name=collection_name,
+        ):
+            logger.info(f"Collection '{collection_name}' créée avec succès.")
+            return True
+        else:
+            logger.error(f"Échec de la création de la collection '{collection_name}'.")
+            return False
+
+    async def search_in_collection(
+        self, collection_name, query_vector, limit=5
+    ) -> List[dict]:
+        """Recherche des vecteurs similaires dans une collection Qdrant de manière asynchrone.
+
+        :param collection_name: Nom de la collection.
+        :param query_vector: Vecteur de requête.
+        :param limit: Nombre maximum de résultats à retourner.
+        :return: Résultat de la recherche.
+        """
+        if not await self.client.get_collection(collection_name):
+            raise ValueError(f"La collection '{collection_name}' n'existe pas.")
+
+        result = await self.client.query_points(
+            collection_name=collection_name,
+            query=query_vector,
+            with_vectors=True,
+            with_payload=True,
+            limit=limit,
         )
-        await self.client.create_collection(
-            collection_name=collection_name, collection_params=params
-        )
+        # sort by score
+        result.points.sort(key=lambda x: x.score, reverse=True)
+
+        # get payload
+        return [
+            {"payload": point.payload, "score": point.score} for point in result.points
+        ]
 
     async def delete_collection(self, collection_name):
         """Supprime une collection dans Qdrant de manière asynchrone.

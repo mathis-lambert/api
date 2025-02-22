@@ -1,10 +1,10 @@
 import uuid
 from datetime import datetime
 
-from api.utils import CustomLogger, InferenceUtils
-from api.v1.classes import TextGeneration
+from api.classes import TextGeneration
+from api.utils import CustomLogger
 from api.v1.security import ensure_valid_token
-from api.v1.services import MistralAIService
+from api.v1.services import get_text_generation
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
@@ -12,13 +12,7 @@ from .chat_models import ChatCompletionResponse, ChatCompletionsRequest
 
 logger = CustomLogger.get_logger(__name__)
 
-
 # Fonction pour instancier TextGeneration
-def get_text_generation(
-    mistralai_service: MistralAIService = Depends(),
-    inference_utils: InferenceUtils = Depends(),
-) -> TextGeneration:
-    return TextGeneration(mistralai_service, inference_utils)
 
 
 router = APIRouter()
@@ -27,7 +21,6 @@ router = APIRouter()
 @router.post(
     "/completions",
     response_model=ChatCompletionResponse,
-    tags=["chat"],
     summary="Get chat completions",
     dependencies=[Depends(ensure_valid_token)],
 )

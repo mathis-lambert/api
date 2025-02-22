@@ -1,4 +1,6 @@
+import json
 import os
+from json.decoder import JSONDecodeError
 
 from mistralai import Mistral
 
@@ -11,7 +13,7 @@ class MistralAIService:
     def __init__(self):
         self.api_key = os.getenv("MISTRAL_API_KEY", None)
 
-        if self.api_key == "":
+        if self.api_key is None:
             raise ValueError("MISTRAL_API_KEY environment variable is not set")
 
         self.mistral_client = Mistral(api_key=self.api_key)
@@ -48,7 +50,34 @@ class MistralAIService:
             return model
         except Exception as e:
             logger.error(f"An error occurred while checking model : {e}")
-            raise ConnectionError(f"An error occurred while checking model : {e}") from e
+            raise ConnectionError(
+                f"An error occurred while checking model : {e}"
+            ) from e
 
     async def list_models(self):
         return await self.mistral_client.models.list_async()
+
+    async def generate_embeddings(
+        self,
+        inputs: list[str],
+        model: str = "mistral-embed",
+        encoding_format: str = "float",
+    ):
+        try:
+            response = await self.mistral_client.embeddings.create_async(
+                model=model, inputs=inputs, encoding_format=encoding_format
+            )
+
+            return json.loads(response.model_dump_json())
+
+        except JSONDecodeError as e:
+            logger.error(f"An error occurred while generating embeddings : {e}")
+            raise ConnectionError(
+                f"An error occurred while generating embeddings : {e}"
+            ) from e
+
+        except Exception as e:
+            logger.error(f"An error occurred while generating embeddings : {e}")
+            raise ConnectionError(
+                f"An error occurred while generating embeddings : {e}"
+            ) from e

@@ -5,7 +5,11 @@ from bson import ObjectId
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 
+from api.utils import CustomLogger
+
 load_dotenv()
+
+logger = CustomLogger.get_logger(__name__)
 
 
 class MongoDBConnector:
@@ -25,6 +29,16 @@ class MongoDBConnector:
             password=self.password,
         )
 
+    async def check_connection(self):
+        try:
+            # timeout = 5
+            # Essayer de se connecter à la base de données
+            await self.client.admin.command("ping", maxTimeMS=5000)
+            return True
+        except Exception as e:
+            logger.error(f"MongoDB connection error: {e}")
+            return False
+
     def get_client(self):
         return self.client
 
@@ -41,9 +55,9 @@ class MongoDBConnector:
 
         return document
 
-    async def find_one(self, collection_name, query):
+    async def find_one(self, collection_name, query, projection=None):
         collection = self.get_database()[collection_name]
-        return await collection.find_one(query)
+        return await collection.find_one(query, projection=projection)
 
     async def find_many(self, collection_name, query, limit=100):
         collection = self.get_database()[collection_name]
@@ -57,6 +71,21 @@ class MongoDBConnector:
             document["created_at"] = datetime.now(timezone.utc)
 
         result = await collection.insert_one(document)
+        return result.inserted_id
+
+    async def log_event(
+        self, user_id: str, job_id: str, action: str, request_body: dict
+    ):
+        collection_name = "events"
+        collection = self.get_database()[collection_name]
+        event = {
+            "user_id": self.object_id(user_id),
+            "job_id": job_id,
+            "action": action,
+            "request_body": request_body,
+            "created_at": datetime.now(timezone.utc),
+        }
+        result = await collection.insert_one(event)
         return result.inserted_id
 
     async def insert_many(self, collection_name, documents):

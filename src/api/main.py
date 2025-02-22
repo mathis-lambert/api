@@ -6,17 +6,22 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from api.databases import MongoDBConnector, QdrantConnector
+from api.utils import CustomLogger, ensure_database_connection
 from api.v1 import v1_router
 
 load_dotenv()
+
+logger = CustomLogger().get_logger("main")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Code de démarrage
-    app.mongodb_client = MongoDBConnector()
-    app.qdrant_client = QdrantConnector()
+    mongodb, qdrant = await ensure_database_connection()
+    app.mongodb_client = mongodb
+    app.qdrant_client = qdrant
+    logger.info("MongoDB and Qdrant clients initialized.")
+
     yield
     # Code d'arrêt
     app.mongodb_client.get_client().close()
@@ -57,7 +62,7 @@ async def check_maintenance(request, call_next):
 
 
 # Inclure les routes pour chaque version
-app.include_router(v1_router, prefix="/v1", tags=["v1"])
+app.include_router(v1_router, prefix="/v1")
 
 
 @app.get("/")

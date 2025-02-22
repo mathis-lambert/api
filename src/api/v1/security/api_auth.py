@@ -52,13 +52,14 @@ class APIAuth:
         return user
 
     def create_access_token(
-        self, data: dict, expires_delta: Optional[timedelta] = None
+        self, data: dict, expires_delta: Optional[timedelta] | None = None
     ) -> str:
         """Crée un token JWT contenant les données transmises,
         avec une expiration définie.
         """
         to_encode = data.copy()
-        expire = datetime.now(UTC) + (expires_delta or timedelta(minutes=15))
+        # If None, token expires in 30 minutes
+        expire = datetime.now(UTC) + (expires_delta or timedelta(minutes=30))
         to_encode.update({"exp": expire})
         token = jwt.encode(to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
         return token

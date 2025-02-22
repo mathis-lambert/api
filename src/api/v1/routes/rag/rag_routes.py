@@ -1,75 +1,115 @@
-from typing import Any, Dict, List
+import json
+import uuid
+from datetime import datetime
 
-from api.v1.security import ensure_valid_token
-from fastapi import APIRouter, Depends, Request
-from pydantic import BaseModel
+from api.databases import MongoDBConnector
+from api.utils import CustomLogger
+from api.v1.security import ensure_valid_token, get_current_user
+from api.v1.services import (
+    RagService,
+    check_collection_ownership,
+    get_mongo_client,
+    get_rag_service,
+)
+from fastapi import APIRouter, Depends, HTTPException
+
+from .rag_models import (
+    RagEncodeRequest,
+    RagEncodeResponse,
+    RagRetrieveRequest,
+    RagRetrieveResponse,
+)
 
 router = APIRouter()
 
-
-# Modèles de données
-class VectorData(BaseModel):
-    id: int
-    vector: List[float]
-    payload: Dict[str, Any] = {}
+logger = CustomLogger.get_logger(__name__)
 
 
-class QueryVector(BaseModel):
-    vector: List[float]
-    top: int = 5
-
-
-# Route pour lister les collections
-@router.get(
-    "/collections",
-    summary="Lister les collections créées par l'utilisateur",
-    tags=["rag"],
-    dependencies=[Depends(ensure_valid_token)],
-)
-async def list_collections(request: Request):
-    """Liste les collections créées par l'utilisateur."""
-    qdrant_client = request.app.qdrant_client
-    collections_response = await qdrant_client.list_collections()
-    collections = collections_response.collections
-    return {"collections": collections}
-
-
-# Route pour insérer des vecteurs dans une collection
 @router.post(
-    "/collections/{collection_name}/insert",
-    summary="Insérer des vecteurs dans une collection",
-    tags=["rag"],
-    dependencies=[Depends(ensure_valid_token)],
+    "/encode/{collection_name}",
+    response_model=RagEncodeResponse,
+    summary="Encode text to a collection",
+    dependencies=[Depends(ensure_valid_token), Depends(check_collection_ownership)],
 )
-async def insert_vectors(
-    collection_name: str, vectors: List[VectorData], request: Request
+async def encode(
+    collection_name: str,
+    body: RagEncodeRequest,
+    rag_service: RagService = Depends(get_rag_service),
+    mongodb_client: MongoDBConnector = Depends(get_mongo_client),
+    user: dict = Depends(get_current_user),
 ):
-    """Insère des vecteurs dans la collection spécifiée."""
-    qdrant_client = request.app.qdrant_client
+    """Encode text to a collection."""
+    # Validation de l'entrée
+    if not body.chunks:
+        raise HTTPException(status_code=400, detail="Aucune entrée fournie")
 
-    points = [
-        {"id": vector.id, "vector": vector.vector, "payload": vector.payload}
-        for vector in vectors
-    ]
+    job_id: str = str(uuid.uuid4())
 
-    await qdrant_client.upsert(collection_name=collection_name, points=points)
-
-    return {"status": "success", "inserted": len(points)}
-
-
-# Route pour récupérer des vecteurs similaires
-@router.post(
-    "/collections/{collection_name}/retrieve",
-    summary="Récupérer des vecteurs similaires",
-    tags=["rag"],
-    dependencies=[Depends(ensure_valid_token)],
-)
-async def retrieve_vectors(collection_name: str, query: QueryVector, request: Request):
-    """Récupère les vecteurs les plus similaires au vecteur de requête fourni."""
-    qdrant_client = request.app.qdrant_client
-
-    search_result = await qdrant_client.search(
-        collection_name=collection_name, query_vector=query.vector, limit=query.top
+    await rag_service.encode_to_collection(
+        collection_name,
+        body.chunks,
+        body.model,
+        body.encoding_format,
     )
 
-    return {"results": search_result}
+    # Save collection_name
+    await mongodb_client.insert_one(
+        "vector_db_collections",
+        {
+            "name": collection_name,
+            "encoding_format": body.encoding_format,
+            "model": body.model,
+            "chunks": body.chunks,
+            "user_id": mongodb_client.object_id(user["_id"]),
+            "created_at": datetime.now(),
+        },
+    )
+
+    # Log event to mongodb
+    await mongodb_client.log_event(
+        user["_id"], job_id, "encode", json.loads(body.model_dump_json())
+    )
+
+    return {
+        "collection_name": body.collection_name,
+        "success": True,
+    }
+
+
+@router.post(
+    "/retrieve/{collection_name}",
+    response_model=RagRetrieveResponse,
+    summary="Retrieve text from a collection",
+    dependencies=[Depends(ensure_valid_token), Depends(check_collection_ownership)],
+)
+async def retrieve(
+    collection_name: str,
+    body: RagRetrieveRequest,
+    rag_service: RagService = Depends(get_rag_service),
+    mongodb_client: MongoDBConnector = Depends(get_mongo_client),
+    user: dict = Depends(get_current_user),
+):
+    """Retrieve text from a collection."""
+    # Validation de l'entrée
+    if not input:
+        raise HTTPException(status_code=400, detail="Aucune entrée fournie")
+
+    job_id: str = str(uuid.uuid4())
+
+    results = await rag_service.retrieve_in_collection(
+        collection_name,
+        body.query,
+        body.model,
+        body.limit,
+    )
+
+    # Log event to mongodb
+    await mongodb_client.log_event(
+        user["_id"], job_id, "retrieve", json.loads(body.model_dump_json())
+    )
+
+    return {
+        "collection_name": collection_name,
+        "results": results,
+        "success": True,
+    }

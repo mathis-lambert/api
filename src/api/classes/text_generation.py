@@ -1,14 +1,9 @@
 import json
 from typing import AsyncGenerator
 
-from api.utils import InferenceUtils
-from api.v1.services import MistralAIService
-
 
 class TextGeneration:
-    def __init__(
-        self, mistralai_service: MistralAIService, inference_utils: InferenceUtils
-    ):
+    def __init__(self, mistralai_service, inference_utils):
         self.mistralai_service = mistralai_service
         self.inference_utils = inference_utils
 
