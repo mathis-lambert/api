@@ -13,12 +13,27 @@ async def check_collection_ownership(
     mongo_client: AsyncIOMotorClient = Depends(get_mongo_client),
 ):
     """Get user's collection from MongoDB."""
-    users_collections = await mongo_client.find_many(
+    users_collection = await mongo_client.find_many(
         "vector_db_collections",
         {"user_id": ObjectId(user["_id"]), "name": collection_name},
     )
 
-    if not users_collections:
-        raise HTTPException(status_code=403, detail="No collection found for this user")
+    if not users_collection:
+        raise HTTPException(status_code=400, detail="No collection found for this user")
 
+    return True
+
+
+async def check_collection_non_existence(
+    collection_name: str,
+    mongo_client: AsyncIOMotorClient = Depends(get_mongo_client),
+):
+    """Check if a collection exists in MongoDB."""
+    collection = await mongo_client.find_many(
+        "vector_db_collections", {"name": collection_name}
+    )
+    if collection:
+        raise HTTPException(
+            status_code=400, detail="Collection already exists for this user"
+        )
     return True

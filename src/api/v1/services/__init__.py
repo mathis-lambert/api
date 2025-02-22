@@ -1,4 +1,4 @@
-from .check import check_collection_ownership
+from .check import check_collection_non_existence, check_collection_ownership
 from .get_classes import (
     get_embeddings,
     get_mistral_service,
@@ -19,4 +19,5 @@ __all__ = [
     "get_text_generation",
     "get_mistral_service",
     "check_collection_ownership",
+    "check_collection_non_existence",
 ]

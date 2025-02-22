@@ -7,6 +7,7 @@ from api.utils import CustomLogger
 from api.v1.security import ensure_valid_token, get_current_user
 from api.v1.services import (
     RagService,
+    check_collection_non_existence,
     check_collection_ownership,
     get_mongo_client,
     get_rag_service,
@@ -29,7 +30,7 @@ logger = CustomLogger.get_logger(__name__)
     "/encode/{collection_name}",
     response_model=RagEncodeResponse,
     summary="Encode text to a collection",
-    dependencies=[Depends(ensure_valid_token), Depends(check_collection_ownership)],
+    dependencies=[Depends(ensure_valid_token), Depends(check_collection_non_existence)],
 )
 async def encode(
     collection_name: str,
