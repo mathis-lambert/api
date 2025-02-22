@@ -2,9 +2,10 @@ import uuid
 from datetime import datetime
 
 from api.classes import TextGeneration
+from api.databases import MongoDBConnector
 from api.utils import CustomLogger
-from api.v1.security import ensure_valid_token
-from api.v1.services import get_text_generation
+from api.v1.security import ensure_valid_token, get_current_user
+from api.v1.services import get_mongo_client, get_text_generation
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
@@ -28,6 +29,8 @@ async def completions(
     request: Request,
     chat_request: ChatCompletionsRequest,
     text_generation: TextGeneration = Depends(get_text_generation),
+    user: dict = Depends(get_current_user),
+    mongodb_client: MongoDBConnector = Depends(get_mongo_client),
 ):
     # Validation du modèle
     try:
@@ -52,12 +55,18 @@ async def completions(
     job_id: str = str(uuid.uuid4())
 
     # Log event to mongodb
-    await request.app.mongodb_client.insert_one(
-        "chat_completions_events",
+    await mongodb_client.log_event(
+        user["_id"],
+        job_id,
+        "chat_completions",
         {
-            "job_id": job_id,
             "model": chat_request.model,
             "messages": messages,
+            "temperature": chat_request.temperature,
+            "max_tokens": chat_request.max_tokens,
+            "top_p": chat_request.top_p,
+            "stream": chat_request.stream,
+            "job_id": job_id,
             "timestamp": datetime.now(),
         },
     )
