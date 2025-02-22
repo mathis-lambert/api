@@ -26,6 +26,7 @@ async def check_collection_ownership(
 
 async def check_collection_non_existence(
     collection_name: str,
+    user: dict = Depends(get_current_user),
     mongo_client: AsyncIOMotorClient = Depends(get_mongo_client),
 ):
     """Check if a collection exists in MongoDB."""
@@ -33,7 +34,9 @@ async def check_collection_non_existence(
         "vector_db_collections", {"name": collection_name}
     )
     if collection:
-        raise HTTPException(
-            status_code=400, detail="Collection already exists for this user"
-        )
+        if str(collection[0]["user_id"]) != user["_id"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Collection already exists and you are not the owner",
+            )
     return True
