@@ -26,7 +26,6 @@ router = APIRouter()
     dependencies=[Depends(ensure_valid_token)],
 )
 async def completions(
-    request: Request,
     chat_request: ChatCompletionsRequest,
     text_generation: TextGeneration = Depends(get_text_generation),
     user: dict = Depends(get_current_user),
