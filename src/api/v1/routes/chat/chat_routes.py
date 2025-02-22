@@ -6,7 +6,7 @@ from api.databases import MongoDBConnector
 from api.utils import CustomLogger
 from api.v1.security import ensure_valid_token, get_current_user
 from api.v1.services import get_mongo_client, get_text_generation
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from .chat_models import ChatCompletionResponse, ChatCompletionsRequest
