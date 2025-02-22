@@ -72,7 +72,7 @@ async def encode(
     )
 
     return {
-        "collection_name": body.collection_name,
+        "collection_name": collection_name,
         "success": True,
     }
 
