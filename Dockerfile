@@ -11,11 +11,11 @@ WORKDIR /app
 # Copie le fichier de dépendances dans le conteneur
 COPY pyproject.toml ./
 
-# Installe les dépendances du projet
-RUN pip install --no-cache-dir .
-
 # Copie le reste de l'application dans le conteneur
 COPY . .
+
+# Installe les dépendances du projet
+RUN pip install --no-cache-dir .
 
 # Commande pour exécuter l'application avec Uvicorn
 CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

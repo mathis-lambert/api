@@ -4,15 +4,13 @@ from typing import List
 from dotenv import load_dotenv
 from qdrant_client import AsyncQdrantClient, models
 
-from api.utils import CustomLogger
-
-logger = CustomLogger.get_logger(__name__)
-
 load_dotenv()
 
 
 class QdrantConnector:
-    def __init__(self):
+    def __init__(self, logger):
+        self.logger = logger
+
         # Récupérer les variables d'environnement
         self.api_key = os.getenv("QDRANT_API_KEY")
         self.url = os.getenv("QDRANT_URL")
@@ -33,7 +31,7 @@ class QdrantConnector:
             await self.client.get_collections()
             return True
         except Exception as e:
-            logger.error(f"Erreur de connexion à Qdrant: {e}")
+            self.logger.error(f"Erreur de connexion à Qdrant: {e}")
             return False
 
     def get_client(self):
@@ -58,7 +56,7 @@ class QdrantConnector:
         try:
             return await self.client.get_collection(collection_name=collection_name)
         except Exception as e:
-            logger.error(
+            self.logger.error(
                 f"Erreur lors de la récupération de la collection '{collection_name}': {e}"
             )
             return None
@@ -106,10 +104,12 @@ class QdrantConnector:
             vectors_config=models.VectorParams(size=vector_size, distance=distance),
             collection_name=collection_name,
         ):
-            logger.info(f"Collection '{collection_name}' créée avec succès.")
+            self.logger.info(f"Collection '{collection_name}' créée avec succès.")
             return True
         else:
-            logger.error(f"Échec de la création de la collection '{collection_name}'.")
+            self.logger.error(
+                f"Échec de la création de la collection '{collection_name}'."
+            )
             return False
 
     async def search_in_collection(

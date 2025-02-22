@@ -18,8 +18,8 @@ signal.signal(signal.SIGINT, handle_sigint)
 
 
 async def ensure_database_connection():
-    mongodb_client = MongoDBConnector()
-    qdrant_client = QdrantConnector()
+    mongodb_client = MongoDBConnector(logger=logger)
+    qdrant_client = QdrantConnector(logger=logger)
 
     while not await mongodb_client.check_connection():
         logger.error("MongoDB connection failed. Retrying in 5 seconds...")

@@ -14,6 +14,3 @@ optimizers:
   max_segment_size: 10000
   flush_interval_sec: 5
   max_optimization_threads: 2
-
-auth:
-  api_key: "secret"

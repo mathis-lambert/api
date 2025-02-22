@@ -5,15 +5,13 @@ from bson import ObjectId
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from api.utils import CustomLogger
-
 load_dotenv()
-
-logger = CustomLogger.get_logger(__name__)
 
 
 class MongoDBConnector:
-    def __init__(self):
+    def __init__(self, logger):
+        self.logger = logger
+
         # Récupérer les informations depuis les variables d'environnement
         self.host = os.getenv("MONGODB_HOST", "localhost")
         self.port = int(os.getenv("MONGODB_PORT", 27017))
@@ -36,7 +34,7 @@ class MongoDBConnector:
             await self.client.admin.command("ping", maxTimeMS=5000)
             return True
         except Exception as e:
-            logger.error(f"MongoDB connection error: {e}")
+            self.logger.error(f"MongoDB connection error: {e}")
             return False
 
     def get_client(self):

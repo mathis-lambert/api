@@ -29,6 +29,7 @@ services:
       - ./qdrant/config/config.yaml:/qdrant/config/config.yaml
     environment:
       RUN_MODE: ${RUN_MODE:-production}
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY}
 
 
   mongodb:
