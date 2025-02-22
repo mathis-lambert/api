@@ -2,8 +2,8 @@
 FROM python:3.13-slim
 
 # Définit les variables d'environnement pour éviter le buffering de Python
-ENV PYTHONUNBUFFERED 1
-ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
 # Définit le répertoire de travail dans le conteneur
 WORKDIR /app
