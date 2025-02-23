@@ -2,8 +2,8 @@ from pydantic import BaseModel
 
 
 class ChatCompletionsRequest(BaseModel):
-    model: str
-    input: str
+    model: str = "mistral-small-latest"
+    input: str = "Hello, how are you?"
     prompt: str = "You are a helpful assistant."
     history: list = []
     temperature: float = 0.7

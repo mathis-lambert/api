@@ -2,7 +2,10 @@ import json
 import uuid
 
 from api.databases import MongoDBConnector
-from api.v1.security import ensure_valid_token, get_current_user
+from api.v1.security import (
+    ensure_valid_api_key_or_token,
+    get_current_user_with_api_key_or_token,
+)
 from api.v1.services import get_embeddings, get_mongo_client
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -15,12 +18,12 @@ router = APIRouter()
     "",
     summary="Get embeddings",
     response_model=EmbeddingsResponse,
-    dependencies=[Depends(ensure_valid_token)],
+    dependencies=[Depends(ensure_valid_api_key_or_token)],
 )
 async def embeddings(
     body: EmbeddingsRequest,
     embeddings=Depends(get_embeddings),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user_with_api_key_or_token),
     mongodb_client: MongoDBConnector = Depends(get_mongo_client),
 ):
     """Get embeddings for the input text."""

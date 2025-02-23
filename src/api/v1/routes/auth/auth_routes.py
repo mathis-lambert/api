@@ -1,9 +1,22 @@
 from datetime import timedelta
+from typing import List
 
-from api.v1.security import APIAuth, AuthError, oauth2_scheme
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
+from api.v1.security import (
+    APIAuth,
+    AuthError,
+    ensure_valid_api_key_or_token,
+    ensure_valid_token,
+    get_auth,
+    get_current_user_with_api_key_or_token,
+    get_current_user_with_token,
+    oauth2_scheme,
+)
+from fastapi import APIRouter, Depends, Form, HTTPException, status
 
 from .auth_models import (
+    ApiKeyEntry,
+    GetApiKeyRequestBody,
+    GetApiKeyResponse,
     GetTokenResponse,
     RegisterRequestBody,
     RegisterResponse,
@@ -11,12 +24,6 @@ from .auth_models import (
 )
 
 router = APIRouter()
-
-
-def get_auth(request: Request):
-    auth_instance = APIAuth()
-    auth_instance.set_mongo_client(request.app.mongodb_client)
-    return auth_instance
 
 
 @router.post(
@@ -38,6 +45,54 @@ async def login(
             timedelta(minutes=expires_in) if expires_in > 0 else None,
         )
         return token_data
+    except AuthError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
+
+
+@router.post(
+    "/api-key",
+    response_model=GetApiKeyResponse,
+    summary="Générer une clé API",
+    dependencies=[Depends(ensure_valid_token)],
+)
+async def generate_api_key(
+    body: GetApiKeyRequestBody,
+    auth: APIAuth = Depends(get_auth),
+    user: dict = Depends(get_current_user_with_token),
+):
+    """Génère une clé API pour un utilisateur authentifié."""
+    try:
+        api_key_data = await auth.generate_api_key(
+            user["username"],
+            expires_in=body.expires_in,
+        )
+        return api_key_data
+    except AuthError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
+
+
+@router.get(
+    "/api-keys",
+    response_model=List[ApiKeyEntry],
+    summary="Lister toutes les clés API de l'utilisateur",
+    dependencies=[Depends(ensure_valid_api_key_or_token)],
+)
+async def list_api_keys(
+    auth: APIAuth = Depends(get_auth),
+    user: dict = Depends(get_current_user_with_api_key_or_token),
+):
+    """Liste toutes les clés API de l'utilisateur authentifié."""
+    try:
+        api_keys = await auth.list_api_keys(user["_id"])
+        return api_keys
     except AuthError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

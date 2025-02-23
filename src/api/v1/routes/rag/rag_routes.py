@@ -4,7 +4,10 @@ from datetime import datetime
 
 from api.databases import MongoDBConnector
 from api.utils import CustomLogger
-from api.v1.security import ensure_valid_token, get_current_user
+from api.v1.security import (
+    ensure_valid_api_key_or_token,
+    get_current_user_with_api_key_or_token,
+)
 from api.v1.services import (
     RagService,
     check_collection_non_existence,
@@ -30,14 +33,17 @@ logger = CustomLogger.get_logger(__name__)
     "/encode/{collection_name}",
     response_model=RagEncodeResponse,
     summary="Encode text to a collection",
-    dependencies=[Depends(ensure_valid_token), Depends(check_collection_non_existence)],
+    dependencies=[
+        Depends(ensure_valid_api_key_or_token),
+        Depends(check_collection_non_existence),
+    ],
 )
 async def encode(
     collection_name: str,
     body: RagEncodeRequest,
     rag_service: RagService = Depends(get_rag_service),
     mongodb_client: MongoDBConnector = Depends(get_mongo_client),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user_with_api_key_or_token),
 ):
     """Encode text to a collection."""
     # Validation de l'entrée
@@ -81,14 +87,17 @@ async def encode(
     "/retrieve/{collection_name}",
     response_model=RagRetrieveResponse,
     summary="Retrieve text from a collection",
-    dependencies=[Depends(ensure_valid_token), Depends(check_collection_ownership)],
+    dependencies=[
+        Depends(ensure_valid_api_key_or_token),
+        Depends(check_collection_ownership),
+    ],
 )
 async def retrieve(
     collection_name: str,
     body: RagRetrieveRequest,
     rag_service: RagService = Depends(get_rag_service),
     mongodb_client: MongoDBConnector = Depends(get_mongo_client),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user_with_api_key_or_token),
 ):
     """Retrieve text from a collection."""
     # Validation de l'entrée

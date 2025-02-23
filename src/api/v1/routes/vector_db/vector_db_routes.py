@@ -1,8 +1,10 @@
 import json
-from typing import Any, Dict, List
 
 from api.databases import MongoDBConnector, QdrantConnector
-from api.v1.security import ensure_valid_token, get_current_user
+from api.v1.security import (
+    ensure_valid_api_key_or_token,
+    get_current_user_with_api_key_or_token,
+)
 from api.v1.services import (
     check_collection_ownership,
     get_mongo_client,
@@ -10,23 +12,11 @@ from api.v1.services import (
 )
 from bson import ObjectId
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from qdrant_client.models import CollectionInfo
 
 from .vector_db_models import CollectionsResponse
 
 router = APIRouter()
-
-
-# Modèles de données
-class VectorData(BaseModel):
-    id: int
-    vector: List[float]
-    payload: Dict[str, Any] = {}
-
-
-class QueryVector(BaseModel):
-    vector: List[float]
-    top: int = 5
 
 
 # Route pour lister les collections
@@ -34,12 +24,12 @@ class QueryVector(BaseModel):
     "/collections",
     response_model=CollectionsResponse,
     summary="Lister les collections créées par l'utilisateur",
-    dependencies=[Depends(ensure_valid_token)],
+    dependencies=[Depends(ensure_valid_api_key_or_token)],
 )
 async def list_collections(
     qdrant_client: QdrantConnector = Depends(get_qdrant_client),
     mongodb_client: MongoDBConnector = Depends(get_mongo_client),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user_with_api_key_or_token),
 ):
     """Liste les collections créées par l'utilisateur."""
     user_collections = await mongodb_client.find_many(
@@ -62,8 +52,12 @@ async def list_collections(
 # Route pour avoir des informations sur une collection
 @router.get(
     "/collections/{collection_name}",
+    response_model=CollectionInfo,
     summary="Lister les informations sur une collection",
-    dependencies=[Depends(ensure_valid_token), Depends(check_collection_ownership)],
+    dependencies=[
+        Depends(ensure_valid_api_key_or_token),
+        Depends(check_collection_ownership),
+    ],
 )
 async def get_collection(
     collection_name: str,

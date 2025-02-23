@@ -1,12 +1,14 @@
 import hashlib
 import hmac
 import os
+import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, Optional
 
 import jwt
 from dotenv import load_dotenv
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request, Security
+from fastapi.security.api_key import APIKeyHeader
 from jwt.exceptions import PyJWTError
 
 from api.utils import CustomLogger
@@ -40,6 +42,11 @@ class APIAuth:
     async def get_user(self, username: str) -> Optional[Dict[str, Any]]:
         """Retourne l'utilisateur correspondant ou None."""
         user = await self.mongo_client.find_one("users", {"username": username})
+        return user
+
+    async def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Retourne l'utilisateur correspondant à l'ID ou None."""
+        user = await self.mongo_client.find_one("users", {"_id": user_id})
         return user
 
     async def authenticate_user(self, username: str, password: str) -> Dict[str, Any]:
@@ -141,6 +148,83 @@ class APIAuth:
         )
         return hmac.compare_digest(new_hash, expected_hash)
 
+    async def generate_api_key(
+        self, username: str, expires_in: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """Génère une clé API pour un utilisateur authentifié."""
+        user = await self.get_user(username)
+        if not user:
+            raise AuthError("Utilisateur introuvable")
+
+        # Générer une clé API unique
+        api_key = str(uuid.uuid4())
+
+        # Calculer la date d'expiration si spécifiée
+        expires_at = None
+        if expires_in is not None:
+            expires_at = datetime.now(UTC) + timedelta(minutes=expires_in)
+
+        # Stocker la clé API dans la base de données
+        api_key_data = {
+            "api_key": api_key,
+            "user_id": user["_id"],
+            "created_at": datetime.now(UTC),
+            "expires_at": expires_at,
+        }
+
+        await self.mongo_client.insert_one("api_keys", api_key_data)
+
+        return {"api_key": api_key, "expires_at": expires_at}
+
+    async def verify_api_key(self, api_key: str) -> Dict[str, Any]:
+        """Vérifie la validité d'une clé API et retourne l'utilisateur associé."""
+        api_key_data = await self.mongo_client.find_one(
+            "api_keys", {"api_key": api_key}
+        )
+
+        if not api_key_data:
+            raise AuthError("Clé API invalide")
+
+        if (
+            api_key_data["expires_at"]
+            and datetime.now(UTC) > api_key_data["expires_at"]
+        ):
+            self.mongo_client.delete_one("api_keys", {"api_key": api_key})
+            raise AuthError("Clé API expirée")
+
+        user = await self.get_user_by_id(api_key_data["user_id"])
+        if not user:
+            raise AuthError("Utilisateur introuvable")
+
+        return user
+
+    async def list_api_keys(self, user_id: str) -> list[dict[str, Any]]:
+        """Liste toutes les clés API d'un utilisateur."""
+        api_keys = await self.mongo_client.find_many("api_keys", {"user_id": user_id})
+
+        # Convertir les ObjectId en chaînes de caractères
+        for api_key in api_keys:
+            api_key["_id"] = str(api_key["_id"])
+            api_key["user_id"] = str(api_key["user_id"])
+            if api_key["expires_at"]:
+                api_key["expires_at"] = api_key["expires_at"].isoformat()
+        api_keys = self.mongo_client.serialize(api_keys)
+        return api_keys
+
+    async def delete_api_key(self, api_key: str) -> bool:
+        """Supprime une clé API."""
+        result = await self.mongo_client.delete_one("api_keys", {"api_key": api_key})
+        return result
+
+    async def get_user_by_api_key(self, api_key: str) -> Optional[Dict[str, Any]]:
+        """Retourne l'utilisateur correspondant à la clé API ou None."""
+        api_key_data = await self.mongo_client.find_one(
+            "api_keys", {"api_key": api_key}
+        )
+        if api_key_data:
+            return await self.get_user_by_id(api_key_data["user_id"])
+        return None
+
 
 def get_auth(request: Request):
     auth_instance = APIAuth()
@@ -148,7 +232,26 @@ def get_auth(request: Request):
     return auth_instance
 
 
-async def get_current_user(
+async def get_current_user_with_api_key(
+    api_key: str = Security(APIKeyHeader(name="X-ML-API-Key", auto_error=False)),
+    auth: APIAuth = Depends(get_auth),
+):
+    """Dépendance qui vérifie le token via l'instance APIAuth.
+    En cas d'erreur, une HTTPException 401 est levée.
+    """
+    try:
+        if api_key:
+            user = await auth.verify_api_key(api_key)
+        else:
+            raise HTTPException(status_code=401, detail="Clé API manquante")
+
+    except Exception as e:
+        logger.error("Erreur lors de la vérification du token: %s", e)
+        raise HTTPException(status_code=401, detail="Token invalide ou expiré") from e
+    return user
+
+
+async def get_current_user_with_token(
     token: str = Depends(oauth2_scheme), auth: APIAuth = Depends(get_auth)
 ):
     """Dépendance qui vérifie le token via l'instance APIAuth.
@@ -159,6 +262,29 @@ async def get_current_user(
     except Exception as e:
         logger.error("Erreur lors de la vérification du token: %s", e)
         raise HTTPException(status_code=401, detail="Token invalide ou expiré") from e
+    return user
+
+
+async def get_current_user_with_api_key_or_token(
+    api_key: str = Security(APIKeyHeader(name="X-ML-API-Key", auto_error=False)),
+    token: str = Depends(oauth2_scheme),
+    auth: APIAuth = Depends(get_auth),
+):
+    """Dépendance qui vérifie le token via l'instance APIAuth.
+    En cas d'erreur, une HTTPException 401 est levée.
+    """
+    try:
+        if api_key:
+            user = await auth.verify_api_key(api_key)
+        elif token:
+            user = await auth.verify_token(token)
+        else:
+            raise HTTPException(status_code=401, detail="Token ou clé API manquant")
+    except Exception as e:
+        logger.error("Erreur lors de la vérification du token: %s", e)
+        raise HTTPException(
+            status_code=401, detail="Token ou clé API invalide ou expiré"
+        ) from e
     return user
 
 
@@ -173,4 +299,46 @@ async def ensure_valid_token(
     except Exception as e:
         logger.error("Erreur lors de la vérification du token: %s", e)
         raise HTTPException(status_code=401, detail="Token invalide ou expiré") from e
+    return True
+
+
+async def ensure_valid_api_key(
+    api_key: str = Security(APIKeyHeader(name="X-ML-API-Key", auto_error=True)),
+    auth: APIAuth = Depends(get_auth),
+):
+    """Dépendance qui vérifie la clé API via l'instance APIAuth.
+    En cas d'erreur, une HTTPException 401 est levée.
+    """
+    try:
+        await auth.verify_api_key(api_key)
+    except AuthError as e:
+        logger.error("Erreur lors de la vérification de la clé API: %s", e)
+        raise HTTPException(
+            status_code=401,
+            detail="Clé API invalide ou expirée",
+            headers={"WWW-Authenticate": "API-Key"},
+        ) from e
+    return True
+
+
+async def ensure_valid_api_key_or_token(
+    api_key: str = Security(APIKeyHeader(name="X-ML-API-Key", auto_error=False)),
+    token: str = Depends(oauth2_scheme),
+    auth: APIAuth = Depends(get_auth),
+):
+    """Dépendance qui vérifie la clé API ou le token via l'instance APIAuth.
+    En cas d'erreur, une HTTPException 401 est levée.
+    """
+    try:
+        if api_key:
+            await auth.verify_api_key(api_key)
+        elif token:
+            await auth.verify_token(token)
+        else:
+            raise HTTPException(status_code=401, detail="Token ou clé API manquant")
+    except Exception as e:
+        logger.error("Erreur lors de la vérification du token ou de la clé API: %s", e)
+        raise HTTPException(
+            status_code=401, detail="Token ou clé API invalide ou expiré"
+        ) from e
     return True

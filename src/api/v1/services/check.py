@@ -2,14 +2,14 @@ from bson import ObjectId
 from fastapi import Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from api.v1.security import get_current_user
+from api.v1.security import get_current_user_with_api_key_or_token
 
 from .get_databases import get_mongo_client
 
 
 async def check_collection_ownership(
     collection_name: str,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user_with_api_key_or_token),
     mongo_client: AsyncIOMotorClient = Depends(get_mongo_client),
 ):
     """Get user's collection from MongoDB."""
@@ -26,7 +26,7 @@ async def check_collection_ownership(
 
 async def check_collection_non_existence(
     collection_name: str,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user_with_api_key_or_token),
     mongo_client: AsyncIOMotorClient = Depends(get_mongo_client),
 ):
     """Check if a collection exists in MongoDB."""

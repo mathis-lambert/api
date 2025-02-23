@@ -4,7 +4,10 @@ from datetime import datetime
 from api.classes import TextGeneration
 from api.databases import MongoDBConnector
 from api.utils import CustomLogger
-from api.v1.security import ensure_valid_token, get_current_user
+from api.v1.security import (
+    ensure_valid_api_key_or_token,
+    get_current_user_with_api_key_or_token,
+)
 from api.v1.services import get_mongo_client, get_text_generation
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -23,12 +26,12 @@ router = APIRouter()
     "/completions",
     response_model=ChatCompletionResponse,
     summary="Get chat completions",
-    dependencies=[Depends(ensure_valid_token)],
+    dependencies=[Depends(ensure_valid_api_key_or_token)],
 )
 async def completions(
     chat_request: ChatCompletionsRequest,
     text_generation: TextGeneration = Depends(get_text_generation),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user_with_api_key_or_token),
     mongodb_client: MongoDBConnector = Depends(get_mongo_client),
 ):
     # Validation du modèle
