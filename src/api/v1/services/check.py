@@ -34,7 +34,7 @@ async def check_collection_non_existence(
         "vector_db_collections", {"name": collection_name}
     )
     if collection:
-        if str(collection[0]["user_id"]) != user["_id"]:
+        if str(collection[0]["user_id"]) != str(user["_id"]):
             raise HTTPException(
                 status_code=400,
                 detail="Collection already exists and you are not the owner",

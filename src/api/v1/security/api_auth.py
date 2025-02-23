@@ -196,7 +196,7 @@ class APIAuth:
         if not user:
             raise AuthError("Utilisateur introuvable")
 
-        return user
+        return self.mongo_client.serialize(user)
 
     async def list_api_keys(self, user_id: str) -> list[dict[str, Any]]:
         """Liste toutes les clés API d'un utilisateur."""
