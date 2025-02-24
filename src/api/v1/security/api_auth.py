@@ -204,11 +204,10 @@ class APIAuth:
 
         # Convertir les ObjectId en chaînes de caractères
         for api_key in api_keys:
-            api_key["_id"] = str(api_key["_id"])
-            api_key["user_id"] = str(api_key["user_id"])
+            api_key["_id"] = str(api_key["_id"])  # Convertir ObjectId en chaîne
+            api_key["user_id"] = str(api_key["user_id"])  # Convertir ObjectId en chaîne
             if api_key["expires_at"]:
                 api_key["expires_at"] = api_key["expires_at"].isoformat()
-        api_keys = self.mongo_client.serialize(api_keys)
         return api_keys
 
     async def delete_api_key(self, api_key: str) -> bool:

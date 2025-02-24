@@ -91,7 +91,7 @@ async def list_api_keys(
 ):
     """Liste toutes les clés API de l'utilisateur authentifié."""
     try:
-        api_keys = await auth.list_api_keys(user["_id"])
+        api_keys = await auth.list_api_keys(str(user["_id"]))
         return api_keys
     except AuthError as e:
         raise HTTPException(
