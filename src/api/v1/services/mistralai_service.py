@@ -2,6 +2,7 @@ import json
 import os
 from json.decoder import JSONDecodeError
 
+from fastapi import HTTPException
 from mistralai import Mistral
 
 from api.utils import CustomLogger
@@ -45,14 +46,17 @@ class MistralAIService:
             model = await self.mistral_client.models.retrieve_async(model_id=model)
 
             if model is None:
-                raise ValueError(f"Model {model} not found")
+                raise HTTPException(status_code=404, detail="Model not found") from None
 
             return model
         except Exception as e:
-            logger.error(f"An error occurred while checking model : {e}")
-            raise ConnectionError(
-                f"An error occurred while checking model : {e}"
-            ) from e
+            if "model not found" in str(e).lower():
+                raise HTTPException(status_code=404, detail="Model not found") from e
+            else:
+                logger.error(f"An error occurred while checking model : {e}")
+                raise ConnectionError(
+                    f"An error occurred while checking model : {e}"
+                ) from e
 
     async def list_models(self):
         return await self.mistral_client.models.list_async()
