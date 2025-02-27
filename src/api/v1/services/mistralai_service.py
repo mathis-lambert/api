@@ -50,12 +50,12 @@ class MistralAIService:
 
             return model
         except Exception as e:
-            if "model not found" in str(e).lower():
+            if "status 404" in str(e).lower():
                 raise HTTPException(status_code=404, detail="Model not found") from e
             else:
                 logger.error(f"An error occurred while checking model : {e}")
-                raise ConnectionError(
-                    f"An error occurred while checking model : {e}"
+                raise HTTPException(
+                    status_code=503, detail="Service unavailable"
                 ) from e
 
     async def list_models(self):
