@@ -24,10 +24,16 @@ class TextGeneration:
             max_tokens=max_tokens,
             top_p=top_p,
         ):
+            # Add new content to the final response
             final_response += response
-            yield json.dumps(
+
+            # Format and serialize the response
+            json_response = json.dumps(
                 self.inference_utils.format_response(final_response, job_id)
             )
+
+            # Yield each chunk as a JSON response
+            yield json_response
 
     async def complete(
         self,

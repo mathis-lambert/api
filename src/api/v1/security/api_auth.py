@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, Optional
 
 import jwt
+from bson import ObjectId
 from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, Request, Security
 from fastapi.security.api_key import APIKeyHeader
@@ -156,6 +157,9 @@ class APIAuth:
         if not user:
             raise AuthError("Utilisateur introuvable")
 
+        if len(await self.list_api_keys(str(user["_id"]))) >= 10:
+            raise AuthError("Nombre maximum de clés API atteint")
+
         # Générer une clé API unique
         api_key = str(uuid.uuid4())
 
@@ -200,7 +204,9 @@ class APIAuth:
 
     async def list_api_keys(self, user_id: str) -> list[dict[str, Any]]:
         """Liste toutes les clés API d'un utilisateur."""
-        api_keys = await self.mongo_client.find_many("api_keys", {"user_id": user_id})
+        api_keys = await self.mongo_client.find_many(
+            "api_keys", {"user_id": ObjectId(user_id)}
+        )
 
         # Convertir les ObjectId en chaînes de caractères
         for api_key in api_keys:
