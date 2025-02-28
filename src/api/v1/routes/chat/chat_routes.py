@@ -16,7 +16,6 @@ from .chat_models import ChatCompletionResponse, ChatCompletionsRequest
 
 logger = CustomLogger.get_logger(__name__)
 
-
 router = APIRouter()
 
 
@@ -84,7 +83,7 @@ async def completions(
             top_p=chat_request.top_p,
             job_id=job_id,
         )
-        return {
-            "response": response["response"],
-            "job_id": response["job_id"],
-        }
+        return ChatCompletionResponse(
+            response=response["response"],
+            job_id=response["job_id"],
+        )
