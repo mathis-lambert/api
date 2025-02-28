@@ -86,4 +86,9 @@ async def completions(
             top_p=chat_request.top_p,
             job_id=job_id,
         )
-        return JSONResponse(response)
+        return JSONResponse(
+            content=ChatCompletionResponse(
+                response=response,
+                job_id=job_id,
+            ).model_dump()
+        )
