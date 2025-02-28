@@ -1,9 +1,6 @@
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import JSONResponse, StreamingResponse
-
 from api.classes import TextGeneration
 from api.databases import MongoDBConnector
 from api.utils import CustomLogger
@@ -12,11 +9,12 @@ from api.v1.security import (
     get_current_user_with_api_key_or_token,
 )
 from api.v1.services import get_mongo_client, get_text_generation
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+
 from .chat_models import ChatCompletionResponse, ChatCompletionsRequest
 
 logger = CustomLogger.get_logger(__name__)
-
-# Fonction pour instancier TextGeneration
 
 
 router = APIRouter()
@@ -29,10 +27,10 @@ router = APIRouter()
     dependencies=[Depends(ensure_valid_api_key_or_token)],
 )
 async def completions(
-        chat_request: ChatCompletionsRequest,
-        text_generation: TextGeneration = Depends(get_text_generation),
-        user: dict = Depends(get_current_user_with_api_key_or_token),
-        mongodb_client: MongoDBConnector = Depends(get_mongo_client),
+    chat_request: ChatCompletionsRequest,
+    text_generation: TextGeneration = Depends(get_text_generation),
+    user: dict = Depends(get_current_user_with_api_key_or_token),
+    mongodb_client: MongoDBConnector = Depends(get_mongo_client),
 ):
     # Validation du modèle
     await text_generation.mistralai_service.check_model(chat_request.model)
@@ -86,9 +84,7 @@ async def completions(
             top_p=chat_request.top_p,
             job_id=job_id,
         )
-        return JSONResponse(
-            content=ChatCompletionResponse(
-                response=response["response"],
-                job_id=response["job_id"],
-            ).model_dump()
+        return ChatCompletionResponse(
+            response=response["response"],
+            job_id=response["job_id"],
         )
