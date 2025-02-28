@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import BaseModel
 
@@ -8,7 +8,7 @@ class ApiKeyEntry(BaseModel):
     api_key: str
     user_id: str
     created_at: datetime
-    expires_at: Optional[datetime] = None
+    expires_at: Optional[Union[datetime, None]] = None
 
 
 class GetTokenRequestBody(BaseModel):
@@ -23,7 +23,7 @@ class GetTokenResponse(BaseModel):
 
 
 class GetApiKeyRequestBody(BaseModel):
-    expires_in: Optional[int] | None = None
+    expires_in: Optional[Union[int, None]] = None
 
 
 class GetApiKeyResponse(BaseModel):
