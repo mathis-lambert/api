@@ -33,6 +33,7 @@ class GetApiKeyRequestBody(BaseModel):
 
 class GetApiKeyResponse(BaseModel):
     api_key: str
+    api_key_id: str
     expires_at: str | None
 
 
