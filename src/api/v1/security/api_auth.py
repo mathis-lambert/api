@@ -27,6 +27,18 @@ class AuthError(Exception):
     pass
 
 
+class TooManyAPIKeysError(Exception):
+    """Exception personnalisée pour le dépassement du nombre maximum de clés API."""
+
+    pass
+
+
+class APIKeyNotFoundError(Exception):
+    """Exception personnalisée pour les clés API introuvables."""
+
+    pass
+
+
 class APIAuth:
     SECRET_KEY = os.getenv("SECRET_KEY")  # clé secret pour signer le token
     ALGORITHM = "HS256"  # algorithme de signature
@@ -158,7 +170,7 @@ class APIAuth:
             raise AuthError("Utilisateur introuvable")
 
         if len(await self.list_api_keys(str(user["_id"]))) >= 10:
-            raise AuthError("Nombre maximum de clés API atteint")
+            raise TooManyAPIKeysError("Nombre maximum de clés API atteint")
 
         # Générer une clé API unique
         api_key = str(uuid.uuid4())
@@ -176,9 +188,18 @@ class APIAuth:
             "expires_at": expires_at,
         }
 
-        await self.mongo_client.insert_one("api_keys", api_key_data)
+        api_key_id = await self.mongo_client.insert_one("api_keys", api_key_data)
 
-        return {"api_key": api_key, "expires_at": expires_at}
+        if not api_key_id:
+            raise HTTPException(
+                status_code=500, detail="Erreur lors de la génération de la clé API"
+            )
+
+        return {
+            "api_key": api_key,
+            "api_key_id": str(api_key_id),
+            "expires_at": expires_at,
+        }
 
     async def verify_api_key(self, api_key: str) -> Dict[str, Any]:
         """Vérifie la validité d'une clé API et retourne l'utilisateur associé."""
@@ -216,10 +237,15 @@ class APIAuth:
                 api_key["expires_at"] = api_key["expires_at"].isoformat()
         return api_keys
 
-    async def delete_api_key(self, api_key: str) -> bool:
-        """Supprime une clé API."""
-        result = await self.mongo_client.delete_one("api_keys", {"api_key": api_key})
-        return result
+    async def delete_api_key(self, user_id: str, api_key_id: str) -> None:
+        """Supprime une clé API d'un utilisateur."""
+        api_key = await self.mongo_client.find_one(
+            "api_keys", {"_id": ObjectId(api_key_id), "user_id": ObjectId(user_id)}
+        )
+        if not api_key:
+            raise APIKeyNotFoundError("Clé API introuvable")
+
+        await self.mongo_client.delete_one("api_keys", {"_id": ObjectId(api_key_id)})
 
     async def get_user_by_api_key(self, api_key: str) -> Optional[Dict[str, Any]]:
         """Retourne l'utilisateur correspondant à la clé API ou None."""

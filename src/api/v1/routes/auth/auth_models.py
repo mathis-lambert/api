@@ -11,6 +11,11 @@ class ApiKeyEntry(BaseModel):
     expires_at: Optional[Union[datetime, None]] = None
 
 
+class DeleteApiKeyResponse(BaseModel):
+    msg: str
+    success: bool
+
+
 class GetTokenRequestBody(BaseModel):
     username: str
     password: str

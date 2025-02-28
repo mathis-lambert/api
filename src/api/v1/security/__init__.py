@@ -1,6 +1,8 @@
 from .api_auth import (
     APIAuth,
+    APIKeyNotFoundError,
     AuthError,
+    TooManyAPIKeysError,
     ensure_valid_api_key,
     ensure_valid_api_key_or_token,
     ensure_valid_token,
@@ -14,6 +16,8 @@ from .oauth2_scheme import oauth2_scheme
 __all__ = [
     "APIAuth",
     "AuthError",
+    "TooManyAPIKeysError",
+    "APIKeyNotFoundError",
     "oauth2_scheme",
     "get_auth",
     "ensure_valid_token",

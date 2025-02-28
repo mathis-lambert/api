@@ -3,7 +3,9 @@ from typing import List
 
 from api.v1.security import (
     APIAuth,
+    APIKeyNotFoundError,
     AuthError,
+    TooManyAPIKeysError,
     ensure_valid_api_key_or_token,
     ensure_valid_token,
     get_auth,
@@ -15,6 +17,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, status
 
 from .auth_models import (
     ApiKeyEntry,
+    DeleteApiKeyResponse,
     GetApiKeyRequestBody,
     GetApiKeyResponse,
     GetTokenResponse,
@@ -77,6 +80,12 @@ async def generate_api_key(
             detail=str(e),
             headers={"WWW-Authenticate": "Bearer"},
         ) from e
+    except TooManyAPIKeysError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e),
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
 
 
 @router.get(
@@ -96,6 +105,35 @@ async def list_api_keys(
     except AuthError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
+
+
+@router.delete(
+    "/api-key/{api_key_id}",
+    response_model=DeleteApiKeyResponse,
+    summary="Supprimer une clé API",
+    dependencies=[Depends(ensure_valid_api_key_or_token)],
+)
+async def delete_api_key(
+    api_key_id: str,
+    auth: APIAuth = Depends(get_auth),
+    user: dict = Depends(get_current_user_with_api_key_or_token),
+):
+    """Supprime une clé API de l'utilisateur authentifié."""
+    try:
+        await auth.delete_api_key(str(user["_id"]), api_key_id)
+        return {"msg": "Clé API supprimée avec succès", "success": True}
+    except AuthError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
+    except APIKeyNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
             headers={"WWW-Authenticate": "Bearer"},
         ) from e
