@@ -1,5 +1,4 @@
-import json
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator, Dict
 
 
 class TextGeneration:
@@ -15,25 +14,35 @@ class TextGeneration:
         max_tokens: int,
         top_p: float,
         job_id: str,
-    ) -> AsyncGenerator[str, None]:
-        final_response = ""
-        async for response in self.mistralai_service.stream(
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        """
+        Génère une réponse en streaming formatée pour SSE.
+
+        Args:
+            model: Identifiant du modèle à utiliser
+            messages: Liste des messages de l'historique de conversation
+            temperature: Contrôle de la randomisation (0-1)
+            max_tokens: Nombre maximum de tokens à générer
+            top_p: Valeur de top_p pour l'échantillonnage
+            job_id: Identifiant unique de la tâche
+
+        Returns:
+            Un générateur asynchrone de dictionnaires contenant les chunks et métadonnées
+        """
+        async for response, finish_reason in self.mistralai_service.stream(
             model=model,
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
             top_p=top_p,
         ):
-            # Add new content to the final response
-            final_response += response
-
-            # Format and serialize the response
-            json_response = json.dumps(
-                self.inference_utils.format_response(final_response, job_id)
-            )
-
-            # Yield each chunk as a JSON response
-            yield json_response
+            # Formater chaque chunk comme un dictionnaire pour la sérialisation JSON
+            chunk_data = {
+                "chunk": response,
+                "finish_reason": finish_reason,
+                "job_id": job_id,
+            }
+            yield chunk_data
 
     async def complete(
         self,
@@ -43,7 +52,21 @@ class TextGeneration:
         max_tokens: int,
         top_p: float,
         job_id: str,
-    ):
+    ) -> Dict[str, str]:
+        """
+        Génère une réponse complète (non-streaming).
+
+        Args:
+            model: Identifiant du modèle à utiliser
+            messages: Liste des messages de l'historique de conversation
+            temperature: Contrôle de la randomisation (0-1)
+            max_tokens: Nombre maximum de tokens à générer
+            top_p: Valeur de top_p pour l'échantillonnage
+            job_id: Identifiant unique de la tâche
+
+        Returns:
+            Un dictionnaire contenant la réponse et l'identifiant de la tâche
+        """
         response = await self.mistralai_service.complete(
             model=model,
             messages=messages,

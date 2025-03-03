@@ -1,6 +1,7 @@
 import json
 import os
 from json.decoder import JSONDecodeError
+from typing import Tuple
 
 from fastapi import HTTPException
 from mistralai import Mistral
@@ -29,7 +30,9 @@ class MistralAIService:
         )
         return response.choices[0].message.content
 
-    async def stream(self, model, messages, temperature, max_tokens, top_p):
+    async def stream(
+        self, model, messages, temperature, max_tokens, top_p
+    ) -> Tuple[str, str]:
         response = await self.mistral_client.chat.stream_async(
             model=model,
             messages=messages,
@@ -39,7 +42,10 @@ class MistralAIService:
         )
         async for chunk in response:
             if chunk.data.choices[0].delta.content is not None:
-                yield chunk.data.choices[0].delta.content
+                yield (
+                    chunk.data.choices[0].delta.content,
+                    chunk.data.choices[0].finish_reason,
+                )
 
     async def check_model(self, model):
         try:
