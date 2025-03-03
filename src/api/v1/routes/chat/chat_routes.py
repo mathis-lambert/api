@@ -143,6 +143,6 @@ async def completions(
             job_id=job_id,
         )
         return ChatCompletionResponse(
-            response=response["response"],
+            result=response["result"],
             job_id=response["job_id"],
         )

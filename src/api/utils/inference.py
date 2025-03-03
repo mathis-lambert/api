@@ -20,8 +20,8 @@ class InferenceUtils:
         return messages
 
     @staticmethod
-    def format_response(response: str, job_id: str) -> Dict:
-        return {"response": response, "job_id": job_id}
+    def format_response(result: str, job_id: str) -> Dict:
+        return {"result": result, "job_id": job_id}
 
     @staticmethod
     def format_embeddings(inputs: List[str], data: List[Dict], job_id: str) -> Dict:

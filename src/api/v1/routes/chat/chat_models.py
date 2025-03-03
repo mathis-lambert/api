@@ -44,13 +44,13 @@ class ChatCompletionChunk(BaseModel):
 class ChatCompletionResponse(BaseModel):
     """Modèle pour une réponse complète (non-streaming)"""
 
-    response: str = Field(..., description="Texte complet généré")
+    result: str = Field(..., description="Texte complet généré")
     job_id: str = Field(..., description="Identifiant unique de la tâche")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "response": "Voici une réponse complète à votre requête.",
+                "result": "Voici une réponse complète à votre requête.",
                 "job_id": "550e8400-e29b-41d4-a716-446655440000",
             }
         }
