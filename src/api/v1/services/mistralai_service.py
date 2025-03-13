@@ -71,11 +71,10 @@ class MistralAIService:
         self,
         inputs: list[str],
         model: str = "mistral-embed",
-        encoding_format: str = "float",
     ):
         try:
             response = await self.mistral_client.embeddings.create_async(
-                model=model, inputs=inputs, encoding_format=encoding_format
+                model=model, inputs=inputs
             )
 
             return json.loads(response.model_dump_json())

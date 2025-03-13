@@ -13,13 +13,11 @@ class Embeddings:
         model: str,
         inputs: list[str],
         job_id: str,
-        encoding_format: str = "float",
         output_format: str = "dict",
     ):
         response = await self.mistralai_service.generate_embeddings(
             inputs=inputs,
             model=model,
-            encoding_format=encoding_format,
         )
         data = response.get("data", None)
 

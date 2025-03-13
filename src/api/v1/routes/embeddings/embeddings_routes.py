@@ -43,7 +43,6 @@ async def embeddings(
         model=body.model,
         inputs=body.chunks,
         job_id=job_id,
-        encoding_format=body.encoding_format,
     )
 
     return embeddings_data
