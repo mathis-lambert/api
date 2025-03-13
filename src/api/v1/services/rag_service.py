@@ -62,7 +62,6 @@ class RagService:
             model=model,
             inputs=[query],
             job_id=job_id,
-            encoding_format="float",
             output_format="tuple",
         )
         results = await self.qdrant_client.search_in_collection(
