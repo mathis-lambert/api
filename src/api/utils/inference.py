@@ -1,11 +1,21 @@
 from typing import Dict, List, Tuple
 
+from pydantic import BaseModel, Field
 from qdrant_client.models import PointStruct
+
+
+class Message(BaseModel):
+    """Modèle pour un message de chat"""
+
+    role: str = Field(
+        ..., description="Rôle de l'émetteur du message (user, assistant, system)"
+    )
+    content: str = Field(..., description="Contenu du message")
 
 
 class InferenceUtils:
     @staticmethod
-    def format_messages(prompt: str, input: str, history: List) -> List:
+    def format_messages(prompt: str, input: str, history: List[Message]) -> List:
         messages = []
 
         if prompt:
@@ -13,7 +23,7 @@ class InferenceUtils:
 
         if history:
             for entry in history:
-                messages.append({"role": entry["role"], "content": entry["content"]})
+                messages.append({"role": entry.role, "content": entry.content})
 
         messages.append({"role": "user", "content": input})
 
