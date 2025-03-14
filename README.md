@@ -7,7 +7,7 @@ Welcome to the `api` repository! This repository hosts the core API infrastructu
 - **FastAPI**: A modern, fast (high-performance) web framework for building APIs with Python 3.13 based on standard Python type hints.
 - **MongoDB**: A NoSQL database used for storing application data, offering flexibility and scalability.
 - **Qdrant**: A vector database used for implementing Retrieval-Augmented Generation (RAG) features, enhancing information retrieval capabilities.
-- **LLM Integration**: Routes for calling the OpenAI API to leverage Large Language Models (LLMs) for various NLP tasks.
+- **LLM Integration**: Routes for calling the MistralAI API to leverage Large Language Models (LLMs) for various NLP tasks.
 - **Versioning**: A systematic versioning approach with endpoints like `/v1`, `/v2`, etc., to manage API changes and ensure backward compatibility.
 
 ## 🚀 Getting Started
@@ -17,7 +17,7 @@ Welcome to the `api` repository! This repository hosts the core API infrastructu
 - Python 3.13
 - MongoDB instance
 - Qdrant instance
-- OpenAI API key
+- MistralAI API key
 
 ### Installation
 
@@ -43,7 +43,7 @@ Welcome to the `api` repository! This repository hosts the core API infrastructu
    ```
    MONGODB_URI=your_mongodb_connection_string
    QDRANT_URI=your_qdrant_connection_string
-   OPENAI_API_KEY=your_openai_api_key
+   MISTRAL_API_KEY=your_mistral_api_key
    ```
 
 ### Running the API
@@ -68,7 +68,7 @@ The API will be accessible at `http://127.0.0.1:3001`.
   - `GET /v1/health`: Check the status of the API.
 
 - **LLM Routes**:
-  - `POST /v1/chat/completions`: Generate text completions using the OpenAI API.
+  - `POST /v1/chat/completions`: Generate text completions using the MistralAI API.
 
 - **Data Routes**:
   - `GET /v1/data`: Retrieve data from MongoDB.
