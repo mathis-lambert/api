@@ -139,24 +139,24 @@ async def delete_api_key(
         ) from e
 
 
-@router.post(
-    "/register",
-    response_model=RegisterResponse,
-    summary="Enregistrer un nouvel utilisateur",
-)
-async def register(
-    auth_request: RegisterRequestBody, auth: APIAuth = Depends(get_auth)
-):
-    """Enregistre un nouvel utilisateur dans la base en mémoire."""
-    try:
-        new_user = await auth.register(
-            auth_request.username, auth_request.password, auth_request.email
-        )
-        return {"msg": "Utilisateur enregistré avec succès", "user": new_user}
-    except AuthError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-        ) from e
+# @router.post(
+#     "/register",
+#     response_model=RegisterResponse,
+#     summary="Enregistrer un nouvel utilisateur",
+# )
+# async def register(
+#     auth_request: RegisterRequestBody, auth: APIAuth = Depends(get_auth)
+# ):
+#     """Enregistre un nouvel utilisateur dans la base en mémoire."""
+#     try:
+#         new_user = await auth.register(
+#             auth_request.username, auth_request.password, auth_request.email
+#         )
+#         return {"msg": "Utilisateur enregistré avec succès", "user": new_user}
+#     except AuthError as e:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+#         ) from e
 
 
 @router.get(
