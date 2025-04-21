@@ -2,6 +2,10 @@
 
 Welcome to the `api` repository! This repository hosts the core API infrastructure for my web services, built using Python 3.13 and FastAPI. The API is designed to serve essential utilities and functionalities across all my web services, accessible under the domain `api.mathislambert.fr`.
 
+## Projet structure
+
+![Diagram GitDiagram](https://github.com/user-attachments/assets/eb1624c1-f0dc-4d41-98d6-01744906c195)
+
 ## 🌟 Features
 
 - **FastAPI**: A modern, fast (high-performance) web framework for building APIs with Python 3.13 based on standard Python type hints.
