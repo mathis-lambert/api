@@ -7,8 +7,7 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    networks:
-      - proxy
+    networks: [ monitor, proxy ]
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`api.mathislambert.fr`)"
@@ -25,3 +24,6 @@ services:
 networks:
   proxy:
     external: true
+  monitor:
+    external: true
+
