@@ -21,8 +21,6 @@ from .auth_models import (
     GetApiKeyRequestBody,
     GetApiKeyResponse,
     GetTokenResponse,
-    RegisterRequestBody,
-    RegisterResponse,
     VerifyResponse,
 )
 

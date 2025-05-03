@@ -16,3 +16,10 @@ router.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 router.include_router(vector_db_router, prefix="/vector-db", tags=["Vector DB"])
 router.include_router(embeddings_router, prefix="/embeddings", tags=["Embeddings"])
 router.include_router(rag_router, prefix="/rag", tags=["RAG"])
+
+
+# Health check
+@router.get("/health", tags=["Health"])
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "ok"}
