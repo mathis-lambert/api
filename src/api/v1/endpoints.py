@@ -22,4 +22,4 @@ router.include_router(rag_router, prefix="/rag", tags=["RAG"])
 @router.get("/health", tags=["Health"])
 async def health_check():
     """Health check endpoint."""
-    return {"status": "ok"}
+    return {"status": "ok", "message": "API is running!"}
