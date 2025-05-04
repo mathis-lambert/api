@@ -6,7 +6,6 @@ from pydantic import BaseModel
 class RagEncodeRequest(BaseModel):
     chunks: List[str]
     model: str = "mistral-embed"
-    encoding_format: str = "float"
 
 
 class RagEncodeResponse(BaseModel):

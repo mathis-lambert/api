@@ -24,7 +24,6 @@ class RagService:
         collection_name: str,
         chunks: list[str],
         model: str,
-        encoding_format: str = "float",
         job_id: str | None = None,
     ):
         if not await self.qdrant_client.get_collection(collection_name):
@@ -35,7 +34,6 @@ class RagService:
             model=model,
             inputs=chunks,
             job_id=job_id,
-            encoding_format=encoding_format,
             output_format="tuple",
         )
         await self.qdrant_client.batch_upsert(

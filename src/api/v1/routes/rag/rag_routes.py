@@ -56,7 +56,6 @@ async def encode(
         collection_name,
         body.chunks,
         body.model,
-        body.encoding_format,
     )
 
     # Save collection_name
@@ -64,7 +63,6 @@ async def encode(
         "vector_db_collections",
         {
             "name": collection_name,
-            "encoding_format": body.encoding_format,
             "model": body.model,
             "chunks": body.chunks,
             "user_id": mongodb_client.object_id(user["_id"]),
