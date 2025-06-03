@@ -46,8 +46,10 @@ Welcome to the `api` repository! This repository hosts the core API infrastructu
    Create a `.env` file in the root directory and add the following variables:
    ```
    MONGODB_URI=your_mongodb_connection_string
-   QDRANT_URI=your_qdrant_connection_string
+   QDRANT_URL=your_qdrant_connection_string
    MISTRAL_API_KEY=your_mistral_api_key
+   OPENAI_API_KEY=your_openai_api_key
+   ANTHROPIC_API_KEY=your_anthropic_api_key
    ```
 
 ### Running the API
