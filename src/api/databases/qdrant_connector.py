@@ -159,7 +159,9 @@ class QdrantConnector:
 
         points = [
             models.PointStruct(id=idx, vector=vector, payload=payload)
-            for idx, (vector, payload) in enumerate(zip(vectors, payloads))
+            for idx, (vector, payload) in enumerate(
+                zip(vectors, payloads, strict=False)
+            )
         ]
 
         await self.client.upsert(collection_name=collection_name, points=points)
