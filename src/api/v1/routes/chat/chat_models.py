@@ -16,6 +16,9 @@ class ChatCompletionsRequest(BaseModel):
     """Modèle pour une requête de complétion de chat"""
 
     model: str = Field(..., description="Identifiant du modèle à utiliser")
+    provider: str = Field(
+        "mistral", description="Provider à utiliser (mistral, openai, anthropic)"
+    )
     prompt: Optional[str] = Field(
         None, description="Prompt à utiliser pour la génération"
     )

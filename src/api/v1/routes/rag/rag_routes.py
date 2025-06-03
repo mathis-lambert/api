@@ -2,20 +2,23 @@ import json
 import uuid
 from datetime import datetime
 
+from fastapi import APIRouter, Depends, HTTPException
+
+from api.classes import Embeddings
 from api.databases import MongoDBConnector
-from api.utils import CustomLogger
+from api.providers import get_provider
+from api.utils import CustomLogger, InferenceUtils
 from api.v1.security import (
     ensure_valid_api_key_or_token,
     get_current_user_with_api_key_or_token,
 )
 from api.v1.services import (
-    RagService,
     check_collection_non_existence,
     check_collection_ownership,
     get_mongo_client,
-    get_rag_service,
+    get_qdrant_client,
 )
-from fastapi import APIRouter, Depends, HTTPException
+from api.v1.services.rag_service import RagService
 
 from .rag_models import (
     RagEncodeRequest,
@@ -41,8 +44,8 @@ logger = CustomLogger.get_logger(__name__)
 async def encode(
     collection_name: str,
     body: RagEncodeRequest,
-    rag_service: RagService = Depends(get_rag_service),
     mongodb_client: MongoDBConnector = Depends(get_mongo_client),
+    qdrant_client=Depends(get_qdrant_client),
     user: dict = Depends(get_current_user_with_api_key_or_token),
 ):
     """Encode text to a collection."""
@@ -51,6 +54,10 @@ async def encode(
         raise HTTPException(status_code=400, detail="Aucune entrée fournie")
 
     job_id: str = str(uuid.uuid4())
+
+    provider_instance = get_provider(body.provider)
+    embeddings = Embeddings(provider_instance, InferenceUtils())
+    rag_service = RagService(embeddings, qdrant_client, mongodb_client)
 
     await rag_service.encode_to_collection(
         collection_name,
@@ -93,16 +100,20 @@ async def encode(
 async def retrieve(
     collection_name: str,
     body: RagRetrieveRequest,
-    rag_service: RagService = Depends(get_rag_service),
     mongodb_client: MongoDBConnector = Depends(get_mongo_client),
+    qdrant_client=Depends(get_qdrant_client),
     user: dict = Depends(get_current_user_with_api_key_or_token),
 ):
     """Retrieve text from a collection."""
     # Validation de l'entrée
-    if not input:
+    if not body.query:
         raise HTTPException(status_code=400, detail="Aucune entrée fournie")
 
     job_id: str = str(uuid.uuid4())
+
+    provider_instance = get_provider(body.provider)
+    embeddings = Embeddings(provider_instance, InferenceUtils())
+    rag_service = RagService(embeddings, qdrant_client, mongodb_client)
 
     results = await rag_service.retrieve_in_collection(
         collection_name,

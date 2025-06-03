@@ -1,13 +1,17 @@
 import json
 import uuid
 
+from fastapi import APIRouter, Depends, HTTPException
+
+from api.classes import Embeddings
 from api.databases import MongoDBConnector
+from api.providers import get_provider
+from api.utils import InferenceUtils
 from api.v1.security import (
     ensure_valid_api_key_or_token,
     get_current_user_with_api_key_or_token,
 )
-from api.v1.services import get_embeddings, get_mongo_client
-from fastapi import APIRouter, Depends, HTTPException
+from api.v1.services import get_mongo_client
 
 from .embeddings_models import EmbeddingsRequest, EmbeddingsResponse
 
@@ -22,10 +26,11 @@ router = APIRouter()
 )
 async def embeddings(
     body: EmbeddingsRequest,
-    embeddings=Depends(get_embeddings),
     user: dict = Depends(get_current_user_with_api_key_or_token),
     mongodb_client: MongoDBConnector = Depends(get_mongo_client),
 ):
+    provider_instance = get_provider(body.provider)
+    embeddings = Embeddings(provider_instance, InferenceUtils())
     """Get embeddings for the input text."""
     # Validation de l'entrée
     if not body.chunks:

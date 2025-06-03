@@ -1,9 +1,11 @@
 from typing import Any, AsyncGenerator, Dict
 
+from api.providers import AIProvider
+
 
 class TextGeneration:
-    def __init__(self, mistralai_service, inference_utils):
-        self.mistralai_service = mistralai_service
+    def __init__(self, provider: AIProvider, inference_utils):
+        self.provider = provider
         self.inference_utils = inference_utils
 
     async def generate_stream_response(
@@ -29,7 +31,7 @@ class TextGeneration:
         Returns:
             Un générateur asynchrone de dictionnaires contenant les chunks et métadonnées
         """
-        async for response, finish_reason in self.mistralai_service.stream(
+        async for response, finish_reason in self.provider.stream(
             model=model,
             messages=messages,
             temperature=temperature,
@@ -67,7 +69,7 @@ class TextGeneration:
         Returns:
             Un dictionnaire contenant la réponse et l'identifiant de la tâche
         """
-        response = await self.mistralai_service.complete(
+        response = await self.provider.complete(
             model=model,
             messages=messages,
             temperature=temperature,

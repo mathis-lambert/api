@@ -1,5 +1,9 @@
 import json
 
+from bson import ObjectId
+from fastapi import APIRouter, Depends
+from qdrant_client.models import CollectionInfo
+
 from api.databases import MongoDBConnector, QdrantConnector
 from api.v1.security import (
     ensure_valid_api_key_or_token,
@@ -10,9 +14,6 @@ from api.v1.services import (
     get_mongo_client,
     get_qdrant_client,
 )
-from bson import ObjectId
-from fastapi import APIRouter, Depends
-from qdrant_client.models import CollectionInfo
 
 from .vector_db_models import CollectionsResponse
 

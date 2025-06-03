@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class RagEncodeRequest(BaseModel):
     chunks: List[str]
     model: str = "mistral-embed"
+    provider: str = "mistral"
 
 
 class RagEncodeResponse(BaseModel):
@@ -17,6 +18,7 @@ class RagRetrieveRequest(BaseModel):
     query: str
     model: str = "mistral-embed"
     limit: int = 5
+    provider: str = "mistral"
 
 
 class RetrieveResult(BaseModel):
