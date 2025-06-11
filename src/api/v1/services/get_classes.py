@@ -1,18 +1,18 @@
 from fastapi import Depends
 
 from api.classes import Embeddings, TextGeneration
+from api.providers import get_provider
 from api.utils import InferenceUtils
 
 from .get_databases import get_mongo_client, get_qdrant_client
-from .mistralai_service import MistralAIService
 from .rag_service import RagService
 
 
 def get_embeddings(
-    mistralai_service: MistralAIService = Depends(),
+    provider: str = "mistral",
     inference_utils: InferenceUtils = Depends(),
 ) -> Embeddings:
-    return Embeddings(mistralai_service, inference_utils)
+    return Embeddings(get_provider(provider), inference_utils)
 
 
 def get_rag_service(
@@ -24,13 +24,11 @@ def get_rag_service(
 
 
 def get_text_generation(
-    mistralai_service: MistralAIService = Depends(),
+    provider: str = "mistral",
     inference_utils: InferenceUtils = Depends(),
 ) -> TextGeneration:
-    return TextGeneration(mistralai_service, inference_utils)
+    return TextGeneration(get_provider(provider), inference_utils)
 
 
-def get_mistral_service(
-    mistralai_service: MistralAIService = Depends(),
-) -> MistralAIService:
-    return mistralai_service
+def get_mistral_service():
+    return get_provider("mistral")

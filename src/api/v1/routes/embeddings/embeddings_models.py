@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class EmbeddingsRequest(BaseModel):
     chunks: List[str]
     model: str
+    provider: str = "mistral"
 
 
 class Embedding(BaseModel):
