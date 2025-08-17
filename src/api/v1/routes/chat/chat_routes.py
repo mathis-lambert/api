@@ -209,8 +209,6 @@ async def completions(
     # Log event to MongoDB
     request_body = {
         "model": chat_request.model,
-        "messages": chat_request.messages,
-        "stream": chat_request.stream,
         "job_id": job_id,
         "timestamp": datetime.now(timezone.utc),
     }
@@ -227,8 +225,7 @@ async def completions(
     standard_fields = {
         "model",
         "messages",
-        "tools",
-        "tool_choice",
+        "stream",
     }
     provider_kwargs = {k: v for k, v in body_dict.items() if k not in standard_fields}
 
@@ -239,8 +236,6 @@ async def completions(
             model=chat_request.model,
             messages=chat_request.messages,
             job_id=job_id,
-            tools=chat_request.tools,
-            tool_choice=chat_request.tool_choice,
             **provider_kwargs,
         )
 
@@ -263,8 +258,6 @@ async def completions(
             model=chat_request.model,
             messages=chat_request.messages,
             job_id=job_id,
-            tools=chat_request.tools,
-            tool_choice=chat_request.tool_choice,
             **provider_kwargs,
         )
         return response

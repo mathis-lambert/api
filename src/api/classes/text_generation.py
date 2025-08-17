@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import os
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional
 
 from openai import AsyncOpenAI
 from openai.types.chat.chat_completion import ChatCompletion
@@ -11,6 +11,7 @@ from openai.types.chat.chat_completion_chunk import (
     Choice,
     ChoiceDelta,
 )
+from openai.types.chat import ChatCompletionMessageParam
 
 
 class TextGeneration:
@@ -37,10 +38,8 @@ class TextGeneration:
     async def generate_stream_response(
         self,
         model: str,
-        messages: List[Dict[str, str]],
+        messages: Iterable[ChatCompletionMessageParam],
         job_id: str,
-        tools: Optional[List[Dict[str, Any]]] = None,
-        tool_choice: Optional[Any] = None,
         **kwargs: Any,
     ) -> AsyncGenerator[ChatCompletionChunk, None]:
         """
@@ -62,8 +61,6 @@ class TextGeneration:
         stream = await self._client.chat.completions.create(
             model=model,
             messages=messages,
-            tools=tools,
-            tool_choice=tool_choice,
             stream=True,
             **kwargs,
         )
@@ -73,10 +70,8 @@ class TextGeneration:
     async def complete(
         self,
         model: str,
-        messages: List[Dict[str, str]],
+        messages: Iterable[ChatCompletionMessageParam],
         job_id: str,
-        tools: Optional[List[Dict[str, Any]]] = None,
-        tool_choice: Optional[Any] = None,
         **kwargs: Any,
     ) -> ChatCompletion:
         """Generate a non-streaming OpenAI Chat Completions response via OpenRouter."""
@@ -127,8 +122,6 @@ class TextGeneration:
         resp = await self._client.chat.completions.create(
             model=model,
             messages=messages,
-            tools=tools,
-            tool_choice=tool_choice,
             **kwargs,
         )
         return resp
