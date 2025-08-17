@@ -25,5 +25,3 @@ def test_chat_completions_stream_sse(client: TestClient):
         # read a few lines from the stream
         first_chunk = next(r.iter_lines())
         assert isinstance(first_chunk, (bytes, str))
-
-

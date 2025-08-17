@@ -15,5 +15,3 @@ def test_embeddings_validation_error(client: TestClient):
     payload = {"model": "mistral-embed", "input": []}
     r = client.post("/v1/embeddings", json=payload)
     assert r.status_code == 400
-
-

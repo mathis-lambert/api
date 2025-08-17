@@ -27,18 +27,18 @@ async def embeddings(
     mongodb_client: MongoDBConnector = Depends(get_mongo_client),
 ):
     """Get embeddings for the input text."""
-    # Validation de l'entrée
+    # Validation of the input
     if not body.input:
-        raise HTTPException(status_code=400, detail="Aucune entrée fournie")
+        raise HTTPException(status_code=400, detail="No input provided")
 
     job_id: str = str(uuid.uuid4())
 
-    # Log event to mongodb
+    # Log event to MongoDB
     await mongodb_client.log_event(
         user["_id"], job_id, "embeddings", json.loads(body.model_dump_json())
     )
 
-    # Génération embeddings
+    # Generation of embeddings
     embeddings_data = await embeddings.generate_embeddings(
         model=body.model,
         inputs=body.input,

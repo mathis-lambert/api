@@ -11,14 +11,14 @@ from api.v1.security import (
     get_current_user_with_api_key_or_token,
 )
 from api.v1.services import get_mongo_client, get_text_generation
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from .chat_models import (
+    ChatChunkChoice,
+    ChatCompletionChunk,
     ChatCompletionResponse,
     ChatCompletionsRequest,
-    ChatCompletionChunk,
-    ChatChunkChoice,
     ChatDelta,
 )
 
@@ -33,30 +33,38 @@ async def sse_stream_generator(
     model: str,
 ) -> AsyncGenerator[str, None]:
     """
-    Flux SSE produisant des événements au format OpenAI `chat.completion.chunk`.
+    SSE stream producing OpenAI `chat.completion.chunk` events.
 
-    - Entrée: un générateur asynchrone qui émet des éléments
+    - Input: an asynchronous generator emitting elements
       {"chunk": str, "finish_reason": Optional[str], "job_id": str}.
-    - Sortie: lignes SSE (texte) où chaque ligne `data:` contient un
-      `ChatCompletionChunk` sérialisé.
+    - Output: SSE lines (text) where each line `data:` contains a
+      serialized `ChatCompletionChunk`.
     """
     try:
         final_answer = ""
         last_finish_reason = None
-        # Premier événement avec rôle assistant
+
+        # First event with assistant role
         prelude = ChatCompletionChunk(
             id=f"chatcmpl-{job_id}",
             object="chat.completion.chunk",
             created=int(datetime.now().timestamp()),
             model=model,
-            choices=[ChatChunkChoice(index=0, delta=ChatDelta(role="assistant", content=""))],
+            choices=[
+                ChatChunkChoice(index=0, delta=ChatDelta(role="assistant", content=""))
+            ],
         ).model_dump_json()
+
         yield f"data: {prelude}\n\n"
+
         async for chunk in generator:
             delta_text = chunk.get("chunk", "")
+
             if chunk.get("finish_reason"):
                 last_finish_reason = chunk.get("finish_reason")
+
             final_answer += delta_text
+
             data = ChatCompletionChunk(
                 id=f"chatcmpl-{job_id}",
                 object="chat.completion.chunk",
@@ -64,38 +72,48 @@ async def sse_stream_generator(
                 model=model,
                 choices=[ChatChunkChoice(index=0, delta=ChatDelta(content=delta_text))],
             ).model_dump_json()
+
             yield f"data: {data}\n\n"
 
-        # Evénement de fin
+        # Finish event
         done_data = ChatCompletionChunk(
             id=f"chatcmpl-{job_id}",
             object="chat.completion.chunk",
             created=int(datetime.now().timestamp()),
             model=model,
-            choices=[ChatChunkChoice(index=0, delta=ChatDelta(), finish_reason=last_finish_reason or "stop")],
+            choices=[
+                ChatChunkChoice(
+                    index=0,
+                    delta=ChatDelta(),
+                    finish_reason=last_finish_reason or "stop",
+                )
+            ],
         ).model_dump_json()
+
         yield f"data: {done_data}\n\n"
+
     except Exception as e:
-        logger.error(f"Erreur pendant le streaming SSE: {str(e)}")
+        logger.error(f"Error during SSE streaming: {str(e)}")
         error_data = json.dumps({"error": str(e)})
+
         yield f"event: error\ndata: {error_data}\n\n"
 
 
 @router.post(
     "/completions",
     summary="Get chat completions",
-    description="""Génère des complétions de chat au format OpenAI Chat Completions.
+    description="""Generate chat completions in OpenAI Chat Completions format.
 
-    - Quand `stream` = `false` (par défaut), retourne un objet `chat.completion`.
-    - Quand `stream` = `true`, retourne un flux SSE dont chaque `data:` contient
+    - When `stream` = `false` (default), return a `chat.completion` object.
+    - When `stream` = `true`, return a SSE stream where each `data:` contains
       un objet `chat.completion.chunk` sérialisé.
-    
+
     Compatible avec les outils (OpenAI Tools) via `tools` et `tool_choice`.
     """,
     response_model=ChatCompletionResponse,
     responses={
         200: {
-            "description": "Réponse réussie",
+            "description": "Success response",
             "content": {
                 "application/json": {
                     "schema": {"$ref": "#/components/schemas/ChatCompletionResponse"},
@@ -107,7 +125,10 @@ async def sse_stream_generator(
                         "choices": [
                             {
                                 "index": 0,
-                                "message": {"role": "assistant", "content": "Bonjour !"},
+                                "message": {
+                                    "role": "assistant",
+                                    "content": "Bonjour !",
+                                },
                                 "logprobs": None,
                                 "finish_reason": "stop",
                             }
@@ -116,7 +137,10 @@ async def sse_stream_generator(
                             "prompt_tokens": 0,
                             "completion_tokens": 0,
                             "total_tokens": 0,
-                            "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens": 0},
+                            "prompt_tokens_details": {
+                                "cached_tokens": 0,
+                                "audio_tokens": 0,
+                            },
                             "completion_tokens_details": {
                                 "reasoning_tokens": 0,
                                 "audio_tokens": 0,
@@ -131,7 +155,7 @@ async def sse_stream_generator(
                     "schema": {
                         "type": "string",
                         "format": "binary",
-                        "description": "Flux SSE contenant des chunks de réponse JSON",
+                        "description": "SSE stream containing JSON response chunks",
                     },
                     "example": 'data: {"id":"chatcmpl-550e8400-e29b-41d4-a716-446655440000","object":"chat.completion.chunk","created":1700000001,"model":"mistral-small","choices":[{"index":0,"delta":{"role":"assistant","content":""}}]}\n\n'
                     'data: {"id":"chatcmpl-550e8400-e29b-41d4-a716-446655440000","object":"chat.completion.chunk","created":1700000002,"model":"mistral-small","choices":[{"index":0,"delta":{"content":"Bonjour"}}]}\n\n'
@@ -148,7 +172,7 @@ async def completions(
         ...,
         examples={
             "non_stream": {
-                "summary": "Requête standard (JSON)",
+                "summary": "Standard request (JSON)",
                 "value": {
                     "model": "mistral-small",
                     "messages": [{"role": "user", "content": "Bonjour"}],
@@ -156,7 +180,7 @@ async def completions(
                 },
             },
             "stream": {
-                "summary": "Requête en streaming (SSE)",
+                "summary": "Streaming request (SSE)",
                 "value": {
                     "model": "mistral-small",
                     "messages": [{"role": "user", "content": "Bonjour"}],
@@ -172,41 +196,36 @@ async def completions(
     """
     Endpoint OpenAI-compatible `POST /v1/chat/completions`.
 
-    - Quand `stream` est `false`, renvoie un `ChatCompletionResponse` (objet
-      OpenAI `chat.completion`).
-    - Quand `stream` est `true`, renvoie un flux SSE dont chaque `data:`
+    - When `stream` is `false`, return a `ChatCompletionResponse` (OpenAI `chat.completion` object).
+    - When `stream` is `true`, return a SSE stream where each `data:`
       contient un `ChatCompletionChunk` sérialisé.
     """
-    # Validation minimale: le provider sera résolu dynamiquement
+    # Minimal validation: the provider will be resolved dynamically
 
-    # Formatage des messages
-    messages = text_generation.inference_utils.format_messages(
-        chat_request.prompt, chat_request.input, chat_request.history, chat_request.messages
-    )
-    if not messages:
+    if not chat_request.messages:
         raise HTTPException(status_code=400, detail="Aucune entrée fournie")
 
-    # Génération d'un identifiant unique pour la tâche
+    # Generation of a unique identifier for the task
     job_id: str = str(uuid.uuid4())
 
-    # Log event to mongodb
+    # Log event to MongoDB
     await mongodb_client.log_event(
         user["_id"],
         job_id,
         "chat_completions",
         {
             "model": chat_request.model,
-            "messages": messages,
+            "messages": chat_request.messages,
             "stream": chat_request.stream,
             "job_id": job_id,
             "timestamp": datetime.now(),
         },
     )
 
-    # Préparation des kwargs: autoriser des champs providers spécifiques
-    # On part de tout le body initial (dict) pour extraire les extras autorisés
+    # Preparation of kwargs: allow specific provider fields
+    # Start from the initial body (dict) to extract allowed extras
     body_dict = chat_request.model_dump(exclude_none=True)
-    # Retire les champs standards que l'on gère explicitement
+    # Remove standard fields that we handle explicitly
     standard_fields = {
         "model",
         "messages",
@@ -218,20 +237,22 @@ async def completions(
     }
     provider_kwargs = {k: v for k, v in body_dict.items() if k not in standard_fields}
 
-    # Choix entre streaming ou réponse complète
+    # Choice between streaming or complete response
     if chat_request.stream:
-        # Obtenir le générateur de stream
+        # Get the stream generator
         stream_generator = text_generation.generate_stream_response(
             model=chat_request.model,
-            messages=messages,
+            messages=chat_request.messages,
             job_id=job_id,
             tools=chat_request.tools,
             tool_choice=chat_request.tool_choice,
             **provider_kwargs,
         )
 
-        # Transformer le générateur en flux SSE
-        sse_generator = sse_stream_generator(stream_generator, job_id, chat_request.model)
+        # Transform the generator into an SSE stream
+        sse_generator = sse_stream_generator(
+            stream_generator, job_id, chat_request.model
+        )
 
         return StreamingResponse(
             sse_generator,
@@ -239,13 +260,13 @@ async def completions(
             headers={
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
-                "X-Accel-Buffering": "no",  # Désactive la mise en tampon Nginx
+                "X-Accel-Buffering": "no",  # Disable Nginx buffering
             },
         )
     else:
         response = await text_generation.complete(
             model=chat_request.model,
-            messages=messages,
+            messages=chat_request.messages,
             job_id=job_id,
             tools=chat_request.tools,
             tool_choice=chat_request.tool_choice,

@@ -20,9 +20,10 @@ def test_vector_store_crud_and_search(client: TestClient):
     assert r.json()["id"] == "vs1"
 
     # Search -> empty list (fake qdrant)
-    r = client.post("/v1/vector_stores/vs1/search", json={"query": "hello", "model": "mistral-embed", "limit": 5})
+    r = client.post(
+        "/v1/vector_stores/vs1/search",
+        json={"query": "hello", "model": "mistral-embed", "limit": 5},
+    )
     assert r.status_code == 200
     assert r.json()["object"] == "list"
     assert r.json()["data"] == []
-
-

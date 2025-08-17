@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import List
 
 from pydantic import BaseModel, Field
 
@@ -27,3 +27,7 @@ class ListVectorStoresResponse(BaseModel):
     data: List[VectorStore]
 
 
+class VectorStoreSearchRequest(BaseModel):
+    query: str
+    model: str
+    limit: int = 5

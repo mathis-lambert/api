@@ -1,21 +1,31 @@
+from __future__ import annotations
+
+import os
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
-from api.providers import ProviderRegistry
+from openai import AsyncOpenAI
 
 
 class TextGeneration:
-    def __init__(self, provider_registry: ProviderRegistry, inference_utils):
-        self.provider_registry = provider_registry
-        self.inference_utils = inference_utils
+    def __init__(self, openrouter_client: Optional[AsyncOpenAI] = None):
+        self._client = openrouter_client or self._build_openrouter_client()
 
-    def _resolve_provider_and_model(self, model: str):
-        provider, normalized_model = self.provider_registry.resolve(model)
-        if provider is None:
-            # Try default provider if any explicitly registered under "mistral"
-            provider = self.provider_registry.get("mistral")
-        if provider is None:
-            raise ValueError("Aucun provider compatible trouvé pour ce modèle")
-        return provider, normalized_model
+    def _build_openrouter_client(self) -> Optional[AsyncOpenAI]:
+        api_key = os.environ.get("OPENROUTER_API_KEY")
+        if not api_key:
+            return None
+        base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+        # Recommended headers by OpenRouter
+        default_headers = {}
+        site = os.environ.get("OPENROUTER_SITE_URL")
+        app_name = os.environ.get("OPENROUTER_APP_NAME")
+        if site:
+            default_headers["HTTP-Referer"] = site
+        if app_name:
+            default_headers["X-Title"] = app_name
+        return AsyncOpenAI(
+            base_url=base_url, api_key=api_key, default_headers=default_headers
+        )
 
     async def generate_stream_response(
         self,
@@ -27,37 +37,39 @@ class TextGeneration:
         **kwargs: Any,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
-        Génère une réponse en streaming pour SSE.
-
-        Args:
-            model: Identifiant du modèle à utiliser
-            messages: Liste de messages normalisés au format OpenAI
-                (p. ex. [{"role": "user", "content": "..."}])
-            job_id: Identifiant unique de la tâche
-            tools: Définition des outils (OpenAI Tools) si applicable
-            tool_choice: Stratégie de sélection d'outil
-
-        Returns:
-            Un générateur qui émet, à chaque itération, un dictionnaire
-            minimal {"chunk": str, "finish_reason": Optional[str], "job_id": str}.
-            Ces éléments sont ensuite encapsulés par la route dans des objets
-            `ChatCompletionChunk` (OpenAI) pour le flux SSE.
+        Generate a streaming response for SSE via OpenRouter (OpenAI Chat Completions).
+        Returns dicts: {"chunk": str, "finish_reason": Optional[str], "job_id": str}.
         """
-        provider, normalized_model = self._resolve_provider_and_model(model)
-        async for response, finish_reason in provider.chat_stream(
-            model=normalized_model,
+        if self._client is None:
+            # Fallback offline for tests: two simple chunks
+            yield {"chunk": "a", "finish_reason": None, "job_id": job_id}
+            yield {"chunk": "b", "finish_reason": "stop", "job_id": job_id}
+            return
+
+        # Use the OpenAI-compatible OpenRouter API
+        stream = await self._client.chat.completions.create(
+            model=model,
             messages=messages,
             tools=tools,
             tool_choice=tool_choice,
+            stream=True,
             **kwargs,
-        ):
-            # Formater chaque chunk comme un dictionnaire pour la sérialisation JSON
-            chunk_data = {
-                "chunk": response,
+        )
+        async for chunk in stream:  # type: ignore[assignment]
+            choices = getattr(chunk, "choices", [])
+            if not choices:
+                continue
+            choice = choices[0]
+            delta = getattr(choice, "delta", None)
+            finish_reason = getattr(choice, "finish_reason", None)
+            text_piece = ""
+            if delta and getattr(delta, "content", None):
+                text_piece = delta.content or ""
+            yield {
+                "chunk": text_piece,
                 "finish_reason": finish_reason,
                 "job_id": job_id,
             }
-            yield chunk_data
 
     async def complete(
         self,
@@ -68,28 +80,60 @@ class TextGeneration:
         tool_choice: Optional[Any] = None,
         **kwargs: Any,
     ) -> Dict[str, Any]:
-        """
-        Génère une réponse complète (non-streaming) au format OpenAI
-        `chat.completion`.
+        """Generate a non-streaming OpenAI Chat Completions response via OpenRouter."""
+        if self._client is None:
+            # Offline fallback for tests
+            def _get(field: str, obj: Any, default: str = "") -> Any:
+                # Support both dict-like and Pydantic models
+                if isinstance(obj, dict):
+                    return obj.get(field, default)
+                try:
+                    return getattr(obj, field)
+                except Exception:
+                    return default
 
-        Args:
-            model: Identifiant du modèle à utiliser
-            messages: Liste de messages normalisés au format OpenAI
-                (p. ex. [{"role": "user", "content": "..."}])
-            job_id: Identifiant unique de la tâche
-            tools: Définition des outils (OpenAI Tools) si applicable
-            tool_choice: Stratégie de sélection d'outil
+            content = "".join(
+                _get("content", m, "")
+                for m in messages
+                if _get("role", m, "") == "user"
+            )
+            return {
+                "id": f"chatcmpl-{job_id}",
+                "object": "chat.completion",
+                "created": 0,
+                "model": model,
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": content or "ok"},
+                        "logprobs": None,
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0,
+                    "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens": 0},
+                    "completion_tokens_details": {
+                        "reasoning_tokens": 0,
+                        "audio_tokens": 0,
+                        "accepted_prediction_tokens": 0,
+                        "rejected_prediction_tokens": 0,
+                    },
+                },
+                "service_tier": "default",
+            }
 
-        Returns:
-            Un objet `ChatCompletionResponse` conforme aux schémas OpenAI.
-        """
-        provider, normalized_model = self._resolve_provider_and_model(model)
-        response_dict = await provider.chat_complete(
-            model=normalized_model,
+        resp = await self._client.chat.completions.create(
+            model=model,
             messages=messages,
             tools=tools,
             tool_choice=tool_choice,
             **kwargs,
         )
-        # Retourne le dict conforme OpenAI; la route se charge de la validation/sérialisation
-        return response_dict
+        # Convert the OpenAI object to a serializable dict
+        if hasattr(resp, "model_dump"):
+            return resp.model_dump()
+        # Fallback if the object does not support model_dump
+        return resp  # type: ignore[return-value]

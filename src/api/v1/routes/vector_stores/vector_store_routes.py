@@ -1,27 +1,23 @@
-import json
 import time
 from typing import List
 
-from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
-
+from api.classes import Embeddings
 from api.databases import MongoDBConnector, QdrantConnector
 from api.v1.security import (
     ensure_valid_api_key_or_token,
     get_current_user_with_api_key_or_token,
 )
-from api.v1.services import get_mongo_client, get_qdrant_client
-from api.v1.services import get_embeddings
-from api.classes import Embeddings
+from api.v1.services import get_embeddings, get_mongo_client, get_qdrant_client
+from bson import ObjectId
+from fastapi import APIRouter, Depends, HTTPException
 
 from .vector_store_models import (
     CreateVectorStoreRequest,
     CreateVectorStoreResponse,
     ListVectorStoresResponse,
     VectorStore,
+    VectorStoreSearchRequest,
 )
-
 
 router = APIRouter(dependencies=[Depends(ensure_valid_api_key_or_token)])
 
@@ -42,14 +38,15 @@ async def create_vector_store(
     mongo: MongoDBConnector = Depends(get_mongo_client),
     user: dict = Depends(get_current_user_with_api_key_or_token),
 ):
-    # Vérifie l'existence logique côté Mongo
+    # Check logical existence on MongoDB
     existing = await mongo.find_one(
-        "vector_db_collections", {"name": body.name, "user_id": ObjectId(user["_id"])},
+        "vector_db_collections",
+        {"name": body.name, "user_id": ObjectId(user["_id"])},
     )
     if existing:
         raise HTTPException(status_code=400, detail="Vector store existe déjà")
 
-    # Créer la collection Qdrant et enregistrer en Mongo
+    # Create the Qdrant collection and save in MongoDB
     await qdrant.create_collection(collection_name=body.name)
     await mongo.insert_one(
         "vector_db_collections",
@@ -67,7 +64,8 @@ async def list_vector_stores(
     user: dict = Depends(get_current_user_with_api_key_or_token),
 ):
     user_collections = await mongo.find_many(
-        "vector_db_collections", {"user_id": ObjectId(user["_id"])},
+        "vector_db_collections",
+        {"user_id": ObjectId(user["_id"])},
     )
     data: List[VectorStore] = []
     for c in user_collections:
@@ -91,12 +89,6 @@ async def get_vector_store(
         raise HTTPException(status_code=404, detail="Vector store introuvable")
     info = await qdrant.get_collection(vector_store_id)
     return _collection_to_vector_store(vector_store_id, info)
-
-
-class VectorStoreSearchRequest(BaseModel):
-    query: str
-    model: str
-    limit: int = 5
 
 
 @router.post("/{vector_store_id}/search")
@@ -128,5 +120,3 @@ async def search_vector_store(
         limit=body.limit,
     )
     return {"object": "list", "data": results}
-
-

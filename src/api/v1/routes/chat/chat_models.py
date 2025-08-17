@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict
 
 
 class Message(BaseModel):
@@ -10,13 +10,12 @@ class Message(BaseModel):
 
 class ChatCompletionsRequest(BaseModel):
     model_config = ConfigDict(extra="allow")
+
     model: str
-    messages: Optional[List[Message]] = None
-    # Compat internes
-    prompt: Optional[str] = None
-    input: Optional[str] = None
-    history: Optional[List[Message]] = None
+    messages: List[Message] = None
+
     stream: bool = False
+
     # Tool calling (OpenAI-compat)
     tools: Optional[List[Dict[str, Any]]] = None
     tool_choice: Optional[Any] = None

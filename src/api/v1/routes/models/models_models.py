@@ -1,14 +1,46 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
 
-class Model(BaseModel):
+class Architecture(BaseModel):
+    input_modalities: Optional[List[str]] = None
+    output_modalities: Optional[List[str]] = None
+    tokenizer: Optional[str] = None
+    instruct_type: Optional[str] = None
+
+
+class TopProvider(BaseModel):
+    is_moderated: Optional[bool] = None
+    context_length: Optional[int] = None
+    max_completion_tokens: Optional[int] = None
+
+
+class Pricing(BaseModel):
+    prompt: Optional[str] = None
+    completion: Optional[str] = None
+    image: Optional[str] = None
+    request: Optional[str] = None
+    web_search: Optional[str] = None
+    internal_reasoning: Optional[str] = None
+    input_cache_read: Optional[str] = None
+    input_cache_write: Optional[str] = None
+
+
+class ModelDTO(BaseModel):
     id: str
-    object: str = "model"
-    owned_by: Optional[str] = None
+    name: Optional[str] = None
+    created: Optional[int] = None
+    description: Optional[str] = None
+    architecture: Optional[Architecture] = None
+    top_provider: Optional[TopProvider] = None
+    pricing: Optional[Pricing] = None
+    canonical_slug: Optional[str] = None
+    context_length: Optional[int] = None
+    hugging_face_id: Optional[str] = None
+    per_request_limits: Optional[Dict[str, Any]] = None
+    supported_parameters: Optional[List[str]] = None
 
 
 class ListModelsResponse(BaseModel):
-    object: str = "list"
-    data: List[Model]
+    data: List[ModelDTO]

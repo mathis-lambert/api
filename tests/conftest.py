@@ -1,12 +1,11 @@
 import os
 import sys
 from contextlib import asynccontextmanager
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import pytest
 from bson import ObjectId
 from fastapi.testclient import TestClient
-
 
 # Ensure the "api" package is imported from the src/ directory
 ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -15,31 +14,40 @@ if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
 
 
+from api.classes import Embeddings, TextGeneration  # noqa: E402
 from api.main import app  # noqa: E402
-from api.providers.base import ModelCard, Provider  # noqa: E402
-from api.providers.registry import ProviderRegistry  # noqa: E402
-from api.utils import InferenceUtils  # noqa: E402
-from api.v1.services.get_classes import get_embeddings as _get_embeddings_dep  # noqa: E402
-from api.v1.services.get_classes import get_text_generation as _get_text_generation_dep  # noqa: E402
-from api.v1.services.get_classes import get_provider_registry as _get_provider_registry_dep  # noqa: E402
-from api.v1.services.get_databases import (  # noqa: E402
-    get_mongo_client as _get_mongo_client_dep,
-    get_qdrant_client as _get_qdrant_client_dep,
-)
-from api.v1.security.api_auth import (  # noqa: E402
-    ensure_valid_api_key_or_token as _ensure_valid_api_key_or_token,
-    get_current_user_with_api_key_or_token as _get_current_user_with_api_key_or_token,
-)
+
 # Import des mêmes symboles via le package pour s'assurer que la clé d'override correspond
 from api.v1.security import (  # noqa: E402
     ensure_valid_api_key_or_token as _ensure_valid_api_key_or_token_pkg,
+)
+from api.v1.security import (
     get_current_user_with_api_key_or_token as _get_current_user_with_api_key_or_token_pkg,
 )
-from api.classes import Embeddings, TextGeneration  # noqa: E402
+from api.v1.security.api_auth import (  # noqa: E402
+    ensure_valid_api_key_or_token as _ensure_valid_api_key_or_token,
+)
+from api.v1.security.api_auth import (
+    get_current_user_with_api_key_or_token as _get_current_user_with_api_key_or_token,
+)
+from api.v1.services.get_classes import (
+    get_embeddings as _get_embeddings_dep,  # noqa: E402
+)
+from api.v1.services.get_classes import (
+    get_text_generation as _get_text_generation_dep,  # noqa: E402
+)
+from api.v1.services.get_databases import (  # noqa: E402
+    get_mongo_client as _get_mongo_client_dep,
+)
+from api.v1.services.get_databases import (
+    get_qdrant_client as _get_qdrant_client_dep,
+)
 
 
 class FakeMongoClientHandle:
-    async def close(self) -> None:  # compat avec await app.qdrant_client.get_client().close()
+    async def close(
+        self
+    ) -> None:  # compat avec await app.qdrant_client.get_client().close()
         return None
 
 
@@ -170,11 +178,15 @@ class FakeMongoConnector:
     def object_id(self, id_str):
         return ObjectId(id_str)
 
-    async def log_event(self, user_id: str, job_id: str, action: str, request_body: dict):
+    async def log_event(
+        self, user_id: str, job_id: str, action: str, request_body: dict
+    ):
         await self.insert_one(
             "events",
             {
-                "user_id": ObjectId(user_id) if not isinstance(user_id, ObjectId) else user_id,
+                "user_id": ObjectId(user_id)
+                if not isinstance(user_id, ObjectId)
+                else user_id,
                 "job_id": job_id,
                 "action": action,
                 "request_body": request_body,
@@ -198,7 +210,9 @@ class FakeQdrantConnector:
     async def check_connection(self):
         return True
 
-    async def create_collection(self, collection_name: str, vector_size: int = 1024, distance: str = "Cosine"):
+    async def create_collection(
+        self, collection_name: str, vector_size: int = 1024, distance: str = "Cosine"
+    ):
         if collection_name in self._collections:
             return True
         self._collections[collection_name] = {
@@ -212,54 +226,15 @@ class FakeQdrantConnector:
     async def get_collection(self, collection_name: str):
         return self._collections.get(collection_name, None)
 
-    async def search_in_collection(self, collection_name: str, query_vector: List[float], limit: int = 5) -> List[dict]:
+    async def search_in_collection(
+        self, collection_name: str, query_vector: List[float], limit: int = 5
+    ) -> List[dict]:
         # Renvoie une liste vide par défaut (aucune donnée indexée dans ce fake)
         return []
 
 
-class FakeProvider(Provider):
-    def __init__(self, name: str):
-        self.name = name
-
-    async def list_models(self) -> List[ModelCard]:
-        return [ModelCard(id=f"{self.name}-test-001", provider=self.name)]
-
-    async def get_model(self, model_id: str) -> ModelCard:
-        return ModelCard(id=model_id, provider=self.name)
-
-    async def chat_complete(
-        self,
-        model: str,
-        messages: List[Dict[str, str]],
-        tools: Optional[List[Dict[str, Any]]] = None,
-        tool_choice: Optional[Any] = None,
-        **kwargs: Any,
-    ) -> Dict[str, Any]:
-        content = "".join(m.get("content", "") for m in messages if m.get("role") == "user") or "ok"
-        return InferenceUtils.chat_openai_response(model=model, content=content)
-
-    async def chat_stream(
-        self,
-        model: str,
-        messages: List[Dict[str, str]],
-        tools: Optional[List[Dict[str, Any]]] = None,
-        tool_choice: Optional[Any] = None,
-        **kwargs: Any,
-    ):
-        # Flux simple en 2 chunks
-        yield "Hello ", None
-        yield "world!", "stop"
-
-    async def create_embeddings(self, model: str, inputs):
-        data = [{"object": "embedding", "embedding": [float(i) + 0.1 for i in range(3)]} for _ in inputs]
-        return {"data": data}
-
-
-def build_fake_registry() -> ProviderRegistry:
-    reg = ProviderRegistry()
-    for name in ["mistral", "openai", "anthropic", "google"]:
-        reg.register(FakeProvider(name))
-    return reg
+class FakeProvider:
+    pass
 
 
 TEST_USER = {"_id": "6555d6e5f1e4f1e4f1e4f1e4", "username": "tester"}
@@ -281,19 +256,22 @@ def test_app():
 
     # Overrides de dépendances sécurité/DB/providers
     app.dependency_overrides[_ensure_valid_api_key_or_token] = lambda: True
-    app.dependency_overrides[_get_current_user_with_api_key_or_token] = lambda: TEST_USER
+    app.dependency_overrides[_get_current_user_with_api_key_or_token] = (
+        lambda: TEST_USER
+    )
     app.dependency_overrides[_ensure_valid_api_key_or_token_pkg] = lambda: True
-    app.dependency_overrides[_get_current_user_with_api_key_or_token_pkg] = lambda: TEST_USER
+    app.dependency_overrides[_get_current_user_with_api_key_or_token_pkg] = (
+        lambda: TEST_USER
+    )
     app.dependency_overrides[_get_mongo_client_dep] = lambda: app.mongodb_client
     app.dependency_overrides[_get_qdrant_client_dep] = lambda: app.qdrant_client
-    app.dependency_overrides[_get_provider_registry_dep] = build_fake_registry
 
-    # Overrides de classes (TextGeneration / Embeddings) pour utiliser le fake registry
+    # Overrides de classes (TextGeneration / Embeddings)
     def _get_embeddings_override():
-        return Embeddings(build_fake_registry(), InferenceUtils())
+        return Embeddings()
 
     def _get_text_generation_override():
-        return TextGeneration(build_fake_registry(), InferenceUtils())
+        return TextGeneration()
 
     app.dependency_overrides[_get_embeddings_dep] = _get_embeddings_override
     app.dependency_overrides[_get_text_generation_dep] = _get_text_generation_override
@@ -304,5 +282,3 @@ def test_app():
 @pytest.fixture()
 def client(test_app):
     return TestClient(test_app)
-
-
