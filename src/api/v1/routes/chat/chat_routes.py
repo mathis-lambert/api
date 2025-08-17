@@ -209,7 +209,7 @@ async def completions(
     # Log event to MongoDB
     request_body = {
         "model": chat_request.model,
-        "messages": [m.model_dump() for m in chat_request.messages],
+        "messages": chat_request.messages,
         "stream": chat_request.stream,
         "job_id": job_id,
         "timestamp": datetime.now(timezone.utc),
