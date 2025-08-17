@@ -8,7 +8,7 @@ from bson import ObjectId
 from fastapi.testclient import TestClient
 
 
-# Assure l'import du paquet "api" depuis le dossier src/
+# Ensure the "api" package is imported from the src/ directory
 ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 SRC_DIR = os.path.join(ROOT_DIR, "src")
 if SRC_DIR not in sys.path:
