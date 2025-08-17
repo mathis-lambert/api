@@ -10,6 +10,7 @@ from openai.types.chat.chat_completion_chunk import (
     ChoiceDelta,
 )
 
+from .chat_models import TextGenerationRequest
 from api.classes import TextGeneration
 from api.databases import MongoDBConnector
 from api.utils import CustomLogger
@@ -165,7 +166,7 @@ async def sse_stream_generator(
     dependencies=[Depends(ensure_valid_api_key_or_token)],
 )
 async def completions(
-    chat_request: ChatCompletion = Body(
+    chat_request: TextGenerationRequest = Body(
         ...,
         examples={
             "non_stream": {
