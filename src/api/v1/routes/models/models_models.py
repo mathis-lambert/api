@@ -1,13 +1,9 @@
-from mistralai.models import (
-    ModelList,
-    RetrieveModelV1ModelsModelIDGetResponseRetrieveModelV1ModelsModelIDGet,
-)
 from pydantic import BaseModel
 
 
 class GetModelResponse(BaseModel):
-    model: RetrieveModelV1ModelsModelIDGetResponseRetrieveModelV1ModelsModelIDGet
+    model: dict
 
 
 class ListModelsResponse(BaseModel):
-    models: ModelList
+    models: list

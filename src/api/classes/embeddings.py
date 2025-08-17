@@ -1,11 +1,12 @@
+from api.providers import AIProvider
 from api.utils import CustomLogger, InferenceUtils
 
 logger = CustomLogger.get_logger(__name__)
 
 
 class Embeddings:
-    def __init__(self, mistralai_service, inference_utils: InferenceUtils):
-        self.mistralai_service = mistralai_service
+    def __init__(self, provider: AIProvider, inference_utils: InferenceUtils):
+        self.provider = provider
         self.inference_utils = inference_utils
 
     async def generate_embeddings(
@@ -15,14 +16,14 @@ class Embeddings:
         job_id: str,
         output_format: str = "dict",
     ):
-        response = await self.mistralai_service.generate_embeddings(
+        response = await self.provider.generate_embeddings(
             inputs=inputs,
             model=model,
         )
         data = response.get("data", None)
 
         if not data:
-            raise ValueError("Invalid response from Mistral API")
+            raise ValueError("Invalid response from AI provider")
 
         if output_format == "points":
             return self.inference_utils.embedding_to_points(inputs, data)

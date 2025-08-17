@@ -2,16 +2,18 @@ import json
 import uuid
 from datetime import datetime
 
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+
 from api.classes import TextGeneration
 from api.databases import MongoDBConnector
-from api.utils import CustomLogger
+from api.providers import get_provider
+from api.utils import CustomLogger, InferenceUtils
 from api.v1.security import (
     ensure_valid_api_key_or_token,
     get_current_user_with_api_key_or_token,
 )
-from api.v1.services import get_mongo_client, get_text_generation
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import StreamingResponse
+from api.v1.services import get_mongo_client
 
 from .chat_models import ChatCompletionResponse, ChatCompletionsRequest
 
@@ -75,12 +77,13 @@ async def sse_stream_generator(generator, job_id):
 )
 async def completions(
     chat_request: ChatCompletionsRequest,
-    text_generation: TextGeneration = Depends(get_text_generation),
     user: dict = Depends(get_current_user_with_api_key_or_token),
     mongodb_client: MongoDBConnector = Depends(get_mongo_client),
 ):
+    provider_instance = get_provider(chat_request.provider)
+    text_generation = TextGeneration(provider_instance, InferenceUtils())
     # Validation du modèle
-    await text_generation.mistralai_service.check_model(chat_request.model)
+    await text_generation.provider.check_model(chat_request.model)
 
     # Formatage des messages
     messages = text_generation.inference_utils.format_messages(
