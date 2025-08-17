@@ -1,11 +1,13 @@
 from api.classes import Models as ModelsClient
 from api.v1.services.get_classes import get_models
 from fastapi import APIRouter, Depends, Path
+from api.utils import CustomLogger
 
 from .models_models import ListModelsResponse, ModelDTO
 
 router = APIRouter()
 
+logger = CustomLogger.get_logger(__name__)
 
 @router.get(
     "/{author}/{model}/endpoints",
@@ -18,6 +20,7 @@ async def read_model(
     models_client: ModelsClient = Depends(get_models),
 ):
     data = await models_client.read_model(author, model)
+    logger.info(f"Model data: {data}")
     return ModelDTO(**data)
 
 
