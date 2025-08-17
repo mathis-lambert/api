@@ -24,7 +24,7 @@ from .chat_models import (
 
 logger = CustomLogger.get_logger(__name__)
 
-router = APIRouter(tags=["Chat"])
+router = APIRouter()
 
 
 async def sse_stream_generator(
