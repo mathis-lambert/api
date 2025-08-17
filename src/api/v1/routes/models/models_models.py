@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
@@ -36,7 +36,7 @@ class EndpointDTO(BaseModel):
     max_completion_tokens: Optional[float] = None
     max_prompt_tokens: Optional[float] = None
     supported_parameters: Optional[List[str]] = None
-    status: Optional[str] = None
+    status: Optional[Union[str, int]] = None
     uptime_last_30m: Optional[float] = None
 
 
