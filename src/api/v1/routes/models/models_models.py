@@ -27,6 +27,19 @@ class Pricing(BaseModel):
     input_cache_write: Optional[str] = None
 
 
+class EndpointDTO(BaseModel):
+    context_length: Optional[int] = None
+    pricing: Optional[Pricing] = None
+    provider_name: Optional[str] = None
+    tag: Optional[str] = None
+    quantization: Optional[str] = None
+    max_completion_tokens: Optional[int] = None
+    max_prompt_tokens: Optional[int] = None
+    supported_parameters: Optional[List[str]] = None
+    status: Optional[int] = None
+    uptime_last_30m: Optional[int] = None
+
+
 class ModelDTO(BaseModel):
     id: Optional[str] = None
     name: Optional[str] = None
@@ -40,6 +53,7 @@ class ModelDTO(BaseModel):
     hugging_face_id: Optional[str] = None
     per_request_limits: Optional[Dict[str, Any]] = None
     supported_parameters: Optional[List[str]] = None
+    endpoints: Optional[List[EndpointDTO]] = None
 
 
 class ListModelsResponse(BaseModel):
