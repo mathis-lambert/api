@@ -1,14 +1,21 @@
 from __future__ import annotations
 
+import datetime
 import os
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from openai import AsyncOpenAI
+from openai.types.chat.chat_completion import ChatCompletion
+from openai.types.chat.chat_completion_chunk import (
+    ChatCompletionChunk,
+    Choice,
+    ChoiceDelta,
+)
 
 
 class TextGeneration:
     def __init__(self, openrouter_client: Optional[AsyncOpenAI] = None):
-        self._client = openrouter_client or self._build_openrouter_client()
+        self._client: AsyncOpenAI = openrouter_client or self._build_openrouter_client()
 
     def _build_openrouter_client(self) -> Optional[AsyncOpenAI]:
         api_key = os.environ.get("OPENROUTER_API_KEY")
@@ -35,15 +42,20 @@ class TextGeneration:
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
         **kwargs: Any,
-    ) -> AsyncGenerator[Dict[str, Any], None]:
+    ) -> AsyncGenerator[ChatCompletionChunk, None]:
         """
         Generate a streaming response for SSE via OpenRouter (OpenAI Chat Completions).
-        Returns dicts: {"chunk": str, "finish_reason": Optional[str], "job_id": str}.
+        Returns ChatCompletion objects.
         """
         if self._client is None:
             # Fallback offline for tests: two simple chunks
-            yield {"chunk": "a", "finish_reason": None, "job_id": job_id}
-            yield {"chunk": "b", "finish_reason": "stop", "job_id": job_id}
+            yield ChatCompletionChunk(
+                id=f"chatcmpl-{job_id}",
+                object="chat.completion.chunk",
+                created=int(datetime.now().timestamp()),
+                model=model,
+                choices=[Choice(index=0, delta=ChoiceDelta(content="a"))],
+            )
             return
 
         # Use the OpenAI-compatible OpenRouter API
@@ -55,21 +67,8 @@ class TextGeneration:
             stream=True,
             **kwargs,
         )
-        async for chunk in stream:  # type: ignore[assignment]
-            choices = getattr(chunk, "choices", [])
-            if not choices:
-                continue
-            choice = choices[0]
-            delta = getattr(choice, "delta", None)
-            finish_reason = getattr(choice, "finish_reason", None)
-            text_piece = ""
-            if delta and getattr(delta, "content", None):
-                text_piece = delta.content or ""
-            yield {
-                "chunk": text_piece,
-                "finish_reason": finish_reason,
-                "job_id": job_id,
-            }
+        async for chunk in stream:
+            yield chunk
 
     async def complete(
         self,
@@ -79,7 +78,7 @@ class TextGeneration:
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> ChatCompletion:
         """Generate a non-streaming OpenAI Chat Completions response via OpenRouter."""
         if self._client is None:
             # Offline fallback for tests
@@ -132,8 +131,4 @@ class TextGeneration:
             tool_choice=tool_choice,
             **kwargs,
         )
-        # Convert the OpenAI object to a serializable dict
-        if hasattr(resp, "model_dump"):
-            return resp.model_dump()
-        # Fallback if the object does not support model_dump
-        return resp  # type: ignore[return-value]
+        return resp

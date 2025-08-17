@@ -3,6 +3,13 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Dict
 
+from openai.types.chat.chat_completion import ChatCompletion
+from openai.types.chat.chat_completion_chunk import (
+    ChatCompletionChunk,
+    Choice,
+    ChoiceDelta,
+)
+
 from api.classes import TextGeneration
 from api.databases import MongoDBConnector
 from api.utils import CustomLogger
@@ -13,14 +20,6 @@ from api.v1.security import (
 from api.v1.services import get_mongo_client, get_text_generation
 from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-
-from .chat_models import (
-    ChatChunkChoice,
-    ChatCompletionChunk,
-    ChatCompletionResponse,
-    ChatCompletionsRequest,
-    ChatDelta,
-)
 
 logger = CustomLogger.get_logger(__name__)
 
@@ -50,9 +49,7 @@ async def sse_stream_generator(
             object="chat.completion.chunk",
             created=int(datetime.now().timestamp()),
             model=model,
-            choices=[
-                ChatChunkChoice(index=0, delta=ChatDelta(role="assistant", content=""))
-            ],
+            choices=[Choice(index=0, delta=ChoiceDelta(role="assistant", content=""))],
         ).model_dump_json()
 
         yield f"data: {prelude}\n\n"
@@ -70,7 +67,7 @@ async def sse_stream_generator(
                 object="chat.completion.chunk",
                 created=int(datetime.now().timestamp()),
                 model=model,
-                choices=[ChatChunkChoice(index=0, delta=ChatDelta(content=delta_text))],
+                choices=[Choice(index=0, delta=ChoiceDelta(content=delta_text))],
             ).model_dump_json()
 
             yield f"data: {data}\n\n"
@@ -82,9 +79,9 @@ async def sse_stream_generator(
             created=int(datetime.now().timestamp()),
             model=model,
             choices=[
-                ChatChunkChoice(
+                Choice(
                     index=0,
-                    delta=ChatDelta(),
+                    delta=ChoiceDelta(),
                     finish_reason=last_finish_reason or "stop",
                 )
             ],
@@ -110,7 +107,7 @@ async def sse_stream_generator(
 
     Compatible avec les outils (OpenAI Tools) via `tools` et `tool_choice`.
     """,
-    response_model=ChatCompletionResponse,
+    response_model=ChatCompletion,
     responses={
         200: {
             "description": "Success response",
@@ -168,7 +165,7 @@ async def sse_stream_generator(
     dependencies=[Depends(ensure_valid_api_key_or_token)],
 )
 async def completions(
-    chat_request: ChatCompletionsRequest = Body(
+    chat_request: ChatCompletion = Body(
         ...,
         examples={
             "non_stream": {
@@ -192,7 +189,7 @@ async def completions(
     text_generation: TextGeneration = Depends(get_text_generation),
     user: dict = Depends(get_current_user_with_api_key_or_token),
     mongodb_client: MongoDBConnector = Depends(get_mongo_client),
-) -> ChatCompletionResponse | StreamingResponse:
+) -> ChatCompletion | StreamingResponse:
     """
     Endpoint OpenAI-compatible `POST /v1/chat/completions`.
 
@@ -224,10 +221,8 @@ async def completions(
         request_body,
     )
 
-
     body_dict = chat_request.model_dump(exclude_none=True)
-    
-    
+
     standard_fields = {
         "model",
         "messages",
