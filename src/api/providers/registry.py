@@ -31,10 +31,6 @@ class ProviderRegistry:
             "oai": "openai",
             "mistral": "mistral",
             "mistralai": "mistral",
-            "anthropic": "anthropic",
-            "claude": "anthropic",
-            "google": "google",
-            "gemini": "google",
         }
 
         # Format explicite provider/model
@@ -51,10 +47,6 @@ class ProviderRegistry:
             return self.get("mistral"), model_stripped
         if model_lower.startswith("gpt-") or model_lower.startswith("o3") or model_lower.startswith("o4"):
             return self.get("openai"), model_stripped
-        if model_lower.startswith("claude"):
-            return self.get("anthropic"), model_stripped
-        if model_lower.startswith("gemini") or model_lower.startswith("textembedding-gecko") or model_lower.startswith("text-embedding-"):
-            return self.get("google"), model_stripped
 
         return None, model_stripped
 

@@ -21,8 +21,6 @@ class TextGeneration:
         self,
         model: str,
         messages: List[Dict[str, str]],
-        temperature: float,
-        top_p: float,
         job_id: str,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
@@ -35,8 +33,6 @@ class TextGeneration:
             model: Identifiant du modèle à utiliser
             messages: Liste de messages normalisés au format OpenAI
                 (p. ex. [{"role": "user", "content": "..."}])
-            temperature: Contrôle de la randomisation (0-1)
-            top_p: Valeur de top_p pour l'échantillonnage
             job_id: Identifiant unique de la tâche
             tools: Définition des outils (OpenAI Tools) si applicable
             tool_choice: Stratégie de sélection d'outil
@@ -51,8 +47,6 @@ class TextGeneration:
         async for response, finish_reason in provider.chat_stream(
             model=normalized_model,
             messages=messages,
-            temperature=temperature,
-            top_p=top_p,
             tools=tools,
             tool_choice=tool_choice,
             **kwargs,
@@ -69,8 +63,6 @@ class TextGeneration:
         self,
         model: str,
         messages: List[Dict[str, str]],
-        temperature: float,
-        top_p: float,
         job_id: str,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
@@ -84,8 +76,6 @@ class TextGeneration:
             model: Identifiant du modèle à utiliser
             messages: Liste de messages normalisés au format OpenAI
                 (p. ex. [{"role": "user", "content": "..."}])
-            temperature: Contrôle de la randomisation (0-1)
-            top_p: Valeur de top_p pour l'échantillonnage
             job_id: Identifiant unique de la tâche
             tools: Définition des outils (OpenAI Tools) si applicable
             tool_choice: Stratégie de sélection d'outil
@@ -97,8 +87,6 @@ class TextGeneration:
         response_dict = await provider.chat_complete(
             model=normalized_model,
             messages=messages,
-            temperature=temperature,
-            top_p=top_p,
             tools=tools,
             tool_choice=tool_choice,
             **kwargs,

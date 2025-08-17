@@ -12,7 +12,7 @@ def test_list_models(client: TestClient):
 
 
 def test_read_model(client: TestClient):
-    r = client.get("/v1/models/mistral-test-001")
+    r = client.get("/v1/models/mistral/mistral-test-001")
     assert r.status_code == 200
     body = r.json()
     assert body["id"] == "mistral-test-001"

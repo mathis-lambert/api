@@ -5,8 +5,6 @@ from api.utils import InferenceUtils
 from api.providers import ProviderRegistry
 from api.providers.mistral_provider import MistralProvider
 from api.providers.openai_provider import OpenAIProvider
-from api.providers.anthropic_provider import AnthropicProvider
-from api.providers.google_provider import GoogleProvider
 
 from .get_databases import get_mongo_client, get_qdrant_client
 
@@ -21,14 +19,6 @@ def _build_provider_registry() -> ProviderRegistry:
         pass
     try:
         registry.register(OpenAIProvider())
-    except Exception:
-        pass
-    try:
-        registry.register(AnthropicProvider())
-    except Exception:
-        pass
-    try:
-        registry.register(GoogleProvider())
     except Exception:
         pass
     return registry

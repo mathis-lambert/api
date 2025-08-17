@@ -153,9 +153,6 @@ async def completions(
                     "model": "mistral-small",
                     "messages": [{"role": "user", "content": "Bonjour"}],
                     "stream": False,
-                    "temperature": 0.7,
-                    "max_tokens": 64,
-                    "top_p": 0.9,
                 },
             },
             "stream": {
@@ -164,9 +161,6 @@ async def completions(
                     "model": "mistral-small",
                     "messages": [{"role": "user", "content": "Bonjour"}],
                     "stream": True,
-                    "temperature": 0.7,
-                    "max_tokens": 64,
-                    "top_p": 0.9,
                 },
             },
         },
@@ -203,9 +197,6 @@ async def completions(
         {
             "model": chat_request.model,
             "messages": messages,
-            "temperature": chat_request.temperature,
-            "max_tokens": chat_request.max_tokens,
-            "top_p": chat_request.top_p,
             "stream": chat_request.stream,
             "job_id": job_id,
             "timestamp": datetime.now(),
@@ -222,17 +213,10 @@ async def completions(
         "prompt",
         "input",
         "history",
-        "temperature",
-        "max_tokens",
-        "top_p",
-        "stream",
         "tools",
         "tool_choice",
     }
     provider_kwargs = {k: v for k, v in body_dict.items() if k not in standard_fields}
-    # max_tokens: ne pas envoyer par défaut. S'il est fourni, l'ajouter aux kwargs.
-    if chat_request.max_tokens is not None:
-        provider_kwargs["max_tokens"] = chat_request.max_tokens
 
     # Choix entre streaming ou réponse complète
     if chat_request.stream:
@@ -240,8 +224,6 @@ async def completions(
         stream_generator = text_generation.generate_stream_response(
             model=chat_request.model,
             messages=messages,
-            temperature=chat_request.temperature,
-            top_p=chat_request.top_p,
             job_id=job_id,
             tools=chat_request.tools,
             tool_choice=chat_request.tool_choice,
@@ -264,8 +246,6 @@ async def completions(
         response = await text_generation.complete(
             model=chat_request.model,
             messages=messages,
-            temperature=chat_request.temperature,
-            top_p=chat_request.top_p,
             job_id=job_id,
             tools=chat_request.tools,
             tool_choice=chat_request.tool_choice,

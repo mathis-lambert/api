@@ -9,18 +9,19 @@ router = APIRouter()
 
 
 @router.get(
-    "/{model_id}",
+    "/{provider}/{model_id}",
     response_model=Model,
     summary="Retrieve a specific model",
 )
 async def read_model(
+    provider: str = Path(..., description="The provider name (e.g., 'mistral', 'openai', 'anthropic', 'google')"),
     model_id: str = Path(..., description="The ID of the model to retrieve"),
     registry: ProviderRegistry = Depends(get_provider_registry),
 ):
-    provider, normalized = registry.resolve(model_id)
-    if provider is None:
+    provider_client = registry.get(provider)
+    if provider_client is None:
         return Model(id=model_id)
-    m = await provider.get_model(normalized)
+    m = await provider_client.get_model(model_id)
     return Model(id=m.id, owned_by=m.provider)
 
 

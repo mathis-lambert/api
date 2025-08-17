@@ -16,9 +16,6 @@ class ChatCompletionsRequest(BaseModel):
     prompt: Optional[str] = None
     input: Optional[str] = None
     history: Optional[List[Message]] = None
-    temperature: float = 0.7
-    max_tokens: Optional[int] = None
-    top_p: float = 0.9
     stream: bool = False
     # Tool calling (OpenAI-compat)
     tools: Optional[List[Dict[str, Any]]] = None
