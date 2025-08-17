@@ -39,6 +39,7 @@ class ChatMessage(BaseModel):
     tool_calls: Optional[List[ToolCall]] = None
     refusal: Optional[str] = None
     annotations: List[dict] = []
+    reasoning_content: Optional[str] = None
 
 
 class ChatCompletionChoice(BaseModel):
@@ -83,6 +84,7 @@ class ChatCompletionResponse(BaseModel):
 class ChatDelta(BaseModel):
     role: Optional[str] = None
     content: Optional[str] = None
+    reasoning_content: Optional[str] = None
 
 
 class ChatChunkChoice(BaseModel):
