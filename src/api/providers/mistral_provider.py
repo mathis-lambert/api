@@ -31,20 +31,23 @@ class MistralProvider(Provider):
         model: str,
         messages: List[Dict[str, str]],
         temperature: float,
-        max_tokens: int,
         top_p: float,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
-        response = await self.client.chat.complete_async(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            top_p=top_p,
-            tools=tools,
-            tool_choice=tool_choice,
-        )
+        params: Dict[str, Any] = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "top_p": top_p,
+        }
+        if tools is not None:
+            params["tools"] = tools
+        if tool_choice is not None:
+            params["tool_choice"] = tool_choice
+        params.update({k: v for k, v in (kwargs or {}).items() if v is not None})
+        response = await self.client.chat.complete_async(**params)
         # Normaliser en OpenAI chat.completion
         choice = response.choices[0]
         message = getattr(choice, "message", None)
@@ -105,20 +108,23 @@ class MistralProvider(Provider):
         model: str,
         messages: List[Dict[str, str]],
         temperature: float,
-        max_tokens: int,
         top_p: float,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
+        **kwargs: Any,
     ) -> AsyncGenerator[Tuple[str, Optional[str]], None]:
-        stream = await self.client.chat.stream_async(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            top_p=top_p,
-            tools=tools,
-            tool_choice=tool_choice,
-        )
+        params: Dict[str, Any] = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "top_p": top_p,
+        }
+        if tools is not None:
+            params["tools"] = tools
+        if tool_choice is not None:
+            params["tool_choice"] = tool_choice
+        params.update({k: v for k, v in (kwargs or {}).items() if v is not None})
+        stream = await self.client.chat.stream_async(**params)
         async for chunk in stream:
             if chunk.data.choices[0].delta.content is not None:
                 yield chunk.data.choices[0].delta.content, chunk.data.choices[0].finish_reason

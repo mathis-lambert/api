@@ -1,7 +1,6 @@
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from api.providers import ProviderRegistry
-from api.v1.routes.chat.chat_models import ChatCompletionResponse
 
 
 class TextGeneration:
@@ -23,11 +22,11 @@ class TextGeneration:
         model: str,
         messages: List[Dict[str, str]],
         temperature: float,
-        max_tokens: int,
         top_p: float,
         job_id: str,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
+        **kwargs: Any,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Génère une réponse en streaming pour SSE.
@@ -37,7 +36,6 @@ class TextGeneration:
             messages: Liste de messages normalisés au format OpenAI
                 (p. ex. [{"role": "user", "content": "..."}])
             temperature: Contrôle de la randomisation (0-1)
-            max_tokens: Nombre maximum de tokens à générer
             top_p: Valeur de top_p pour l'échantillonnage
             job_id: Identifiant unique de la tâche
             tools: Définition des outils (OpenAI Tools) si applicable
@@ -54,10 +52,10 @@ class TextGeneration:
             model=normalized_model,
             messages=messages,
             temperature=temperature,
-            max_tokens=max_tokens,
             top_p=top_p,
             tools=tools,
             tool_choice=tool_choice,
+            **kwargs,
         ):
             # Formater chaque chunk comme un dictionnaire pour la sérialisation JSON
             chunk_data = {
@@ -72,12 +70,12 @@ class TextGeneration:
         model: str,
         messages: List[Dict[str, str]],
         temperature: float,
-        max_tokens: int,
         top_p: float,
         job_id: str,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
-    ) -> ChatCompletionResponse:
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
         """
         Génère une réponse complète (non-streaming) au format OpenAI
         `chat.completion`.
@@ -87,7 +85,6 @@ class TextGeneration:
             messages: Liste de messages normalisés au format OpenAI
                 (p. ex. [{"role": "user", "content": "..."}])
             temperature: Contrôle de la randomisation (0-1)
-            max_tokens: Nombre maximum de tokens à générer
             top_p: Valeur de top_p pour l'échantillonnage
             job_id: Identifiant unique de la tâche
             tools: Définition des outils (OpenAI Tools) si applicable
@@ -101,11 +98,10 @@ class TextGeneration:
             model=normalized_model,
             messages=messages,
             temperature=temperature,
-            max_tokens=max_tokens,
             top_p=top_p,
             tools=tools,
             tool_choice=tool_choice,
+            **kwargs,
         )
-        # Validation/normalisation selon le modèle Pydantic exposé
-        # par `api.v1.routes.chat.chat_models.ChatCompletionResponse`.
-        return ChatCompletionResponse.model_validate(response_dict)
+        # Retourne le dict conforme OpenAI; la route se charge de la validation/sérialisation
+        return response_dict

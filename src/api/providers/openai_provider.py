@@ -30,20 +30,24 @@ class OpenAIProvider(Provider):
         model: str,
         messages: List[Dict[str, str]],
         temperature: float,
-        max_tokens: int,
         top_p: float,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
-        response = await self.client.chat.completions.create(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            top_p=top_p,
-            tools=tools,
-            tool_choice=tool_choice,
-        )
+        params: Dict[str, Any] = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "top_p": top_p,
+        }
+        if tools is not None:
+            params["tools"] = tools
+        if tool_choice is not None:
+            params["tool_choice"] = tool_choice
+        # Ajoute les kwargs non nuls (provider-spécifiques)
+        params.update({k: v for k, v in (kwargs or {}).items() if v is not None})
+        response = await self.client.chat.completions.create(**params)
         # Retourne la réponse OpenAI originale (dict)
         return response.model_dump()
 
@@ -52,21 +56,24 @@ class OpenAIProvider(Provider):
         model: str,
         messages: List[Dict[str, str]],
         temperature: float,
-        max_tokens: int,
         top_p: float,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
+        **kwargs: Any,
     ) -> AsyncGenerator[Tuple[str, Optional[str]], None]:
-        stream = await self.client.chat.completions.create(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            top_p=top_p,
-            stream=True,
-            tools=tools,
-            tool_choice=tool_choice,
-        )
+        params: Dict[str, Any] = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "top_p": top_p,
+            "stream": True,
+        }
+        if tools is not None:
+            params["tools"] = tools
+        if tool_choice is not None:
+            params["tool_choice"] = tool_choice
+        params.update({k: v for k, v in (kwargs or {}).items() if v is not None})
+        stream = await self.client.chat.completions.create(**params)
         async for event in stream:
             if event.choices:
                 delta = event.choices[0].delta

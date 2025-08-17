@@ -32,10 +32,10 @@ class GoogleProvider(Provider):
         model: str,
         messages: List[Dict[str, str]],
         temperature: float,
-        max_tokens: int,
         top_p: float,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         # Concatène le contexte et les messages; Gemini utilise un format différent
         system = "\n".join(m["content"] for m in messages if m["role"] == "system")
@@ -43,14 +43,9 @@ class GoogleProvider(Provider):
         prompt = "\n".join(f"{m['role']}: {m['content']}" for m in history)
         gm = GenerativeModel(model)
         def _run():
-            return gm.generate_content(
-                [system, prompt],
-                generation_config={
-                    "temperature": temperature,
-                    "top_p": top_p,
-                    "max_output_tokens": max_tokens,
-                },
-            )
+            gen_config = {"temperature": temperature, "top_p": top_p}
+            gen_config.update({k: v for k, v in (kwargs or {}).items() if v is not None})
+            return gm.generate_content([system, prompt], generation_config=gen_config)
         resp = await asyncio.to_thread(_run)
         text = getattr(resp, "text", "") or ""
         import time, uuid
@@ -89,24 +84,29 @@ class GoogleProvider(Provider):
         model: str,
         messages: List[Dict[str, str]],
         temperature: float,
-        max_tokens: int,
         top_p: float,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
+        **kwargs: Any,
     ) -> AsyncGenerator[Tuple[str, Optional[str]], None]:
         system = "\n".join(m["content"] for m in messages if m["role"] == "system")
         history = [m for m in messages if m["role"] != "system"]
         prompt = "\n".join(f"{m['role']}: {m['content']}" for m in history)
         # Fallback: pas de vrai streaming; on génère tout et on renvoie en un seul chunk
-        text = await self.chat_complete(
+        resp = await self.chat_complete(
             model=model,
             messages=messages,
             temperature=temperature,
-            max_tokens=max_tokens,
             top_p=top_p,
+            **kwargs,
         )
-        if text:
-            yield text, "stop"
+        if resp and isinstance(resp, dict):
+            try:
+                content_text = resp.get("choices", [{}])[0].get("message", {}).get("content", "")
+            except Exception:
+                content_text = ""
+            if content_text:
+                yield content_text, "stop"
 
     async def create_embeddings(self, model: str, inputs: Iterable[str]) -> Dict[str, Any]:
         # Utilise la fonction synchrone dans un thread

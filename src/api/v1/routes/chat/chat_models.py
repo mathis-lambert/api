@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class Message(BaseModel):
@@ -9,6 +9,7 @@ class Message(BaseModel):
 
 
 class ChatCompletionsRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
     model: str
     messages: Optional[List[Message]] = None
     # Compat internes
@@ -16,7 +17,7 @@ class ChatCompletionsRequest(BaseModel):
     input: Optional[str] = None
     history: Optional[List[Message]] = None
     temperature: float = 0.7
-    max_tokens: int = 1024
+    max_tokens: Optional[int] = None
     top_p: float = 0.9
     stream: bool = False
     # Tool calling (OpenAI-compat)

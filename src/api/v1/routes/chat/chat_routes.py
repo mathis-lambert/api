@@ -212,6 +212,28 @@ async def completions(
         },
     )
 
+    # Préparation des kwargs: autoriser des champs providers spécifiques
+    # On part de tout le body initial (dict) pour extraire les extras autorisés
+    body_dict = chat_request.model_dump(exclude_none=True)
+    # Retire les champs standards que l'on gère explicitement
+    standard_fields = {
+        "model",
+        "messages",
+        "prompt",
+        "input",
+        "history",
+        "temperature",
+        "max_tokens",
+        "top_p",
+        "stream",
+        "tools",
+        "tool_choice",
+    }
+    provider_kwargs = {k: v for k, v in body_dict.items() if k not in standard_fields}
+    # max_tokens: ne pas envoyer par défaut. S'il est fourni, l'ajouter aux kwargs.
+    if chat_request.max_tokens is not None:
+        provider_kwargs["max_tokens"] = chat_request.max_tokens
+
     # Choix entre streaming ou réponse complète
     if chat_request.stream:
         # Obtenir le générateur de stream
@@ -219,11 +241,11 @@ async def completions(
             model=chat_request.model,
             messages=messages,
             temperature=chat_request.temperature,
-            max_tokens=chat_request.max_tokens,
             top_p=chat_request.top_p,
             job_id=job_id,
             tools=chat_request.tools,
             tool_choice=chat_request.tool_choice,
+            **provider_kwargs,
         )
 
         # Transformer le générateur en flux SSE
@@ -243,10 +265,10 @@ async def completions(
             model=chat_request.model,
             messages=messages,
             temperature=chat_request.temperature,
-            max_tokens=chat_request.max_tokens,
             top_p=chat_request.top_p,
             job_id=job_id,
             tools=chat_request.tools,
             tool_choice=chat_request.tool_choice,
+            **provider_kwargs,
         )
         return response

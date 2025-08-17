@@ -33,10 +33,10 @@ class Provider(ABC):
         model: str,
         messages: List[Dict[str, str]],
         temperature: float,
-        max_tokens: int,
         top_p: float,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         ...
 
@@ -46,10 +46,10 @@ class Provider(ABC):
         model: str,
         messages: List[Dict[str, str]],
         temperature: float,
-        max_tokens: int,
         top_p: float,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
+        **kwargs: Any,
     ) -> AsyncGenerator[Tuple[str, Optional[str]], None]:
         ...
 

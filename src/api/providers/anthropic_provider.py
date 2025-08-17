@@ -31,10 +31,10 @@ class AnthropicProvider(Provider):
         model: str,
         messages: List[Dict[str, str]],
         temperature: float,
-        max_tokens: int,
         top_p: float,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         # Anthropic utilise "messages" avec un format similaire mais avec system séparé
         system = None
@@ -45,14 +45,23 @@ class AnthropicProvider(Provider):
             else:
                 content_msgs.append({"role": m["role"], "content": m["content"]})
 
-        response = await self.client.messages.create(
-            model=model,
-            system=system,
-            messages=content_msgs,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            top_p=top_p,
-        )
+        params: Dict[str, Any] = {
+            "model": model,
+            "system": system,
+            "messages": content_msgs,
+            "temperature": temperature,
+            "top_p": top_p,
+        }
+        # Anthropic requiert max_tokens; si non fourni, on choisit un fallback sûr
+        max_tokens_kw = (kwargs or {}).get("max_tokens")
+        if max_tokens_kw is None:
+            max_tokens_kw = 1024
+        params["max_tokens"] = max_tokens_kw
+        # Ajouter autres kwargs spécifiques si présents
+        for k, v in (kwargs or {}).items():
+            if v is not None and k not in params:
+                params[k] = v
+        response = await self.client.messages.create(**params)
         # Réponse sous forme de blocs -> OpenAI-like
         text = ""
         for block in response.content:
@@ -94,10 +103,10 @@ class AnthropicProvider(Provider):
         model: str,
         messages: List[Dict[str, str]],
         temperature: float,
-        max_tokens: int,
         top_p: float,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
+        **kwargs: Any,
     ) -> AsyncGenerator[Tuple[str, Optional[str]], None]:
         system = None
         content_msgs = []
@@ -107,15 +116,22 @@ class AnthropicProvider(Provider):
             else:
                 content_msgs.append({"role": m["role"], "content": m["content"]})
 
-        stream = await self.client.messages.create(
-            model=model,
-            system=system,
-            messages=content_msgs,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            top_p=top_p,
-            stream=True,
-        )
+        params: Dict[str, Any] = {
+            "model": model,
+            "system": system,
+            "messages": content_msgs,
+            "temperature": temperature,
+            "top_p": top_p,
+            "stream": True,
+        }
+        max_tokens_kw = (kwargs or {}).get("max_tokens")
+        if max_tokens_kw is None:
+            max_tokens_kw = 1024
+        params["max_tokens"] = max_tokens_kw
+        for k, v in (kwargs or {}).items():
+            if v is not None and k not in params:
+                params[k] = v
+        stream = await self.client.messages.create(**params)
         async for event in stream:
             if hasattr(event, "type") and event.type == "content_block_delta":
                 delta = getattr(event, "delta", None)

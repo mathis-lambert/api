@@ -232,10 +232,10 @@ class FakeProvider(Provider):
         model: str,
         messages: List[Dict[str, str]],
         temperature: float,
-        max_tokens: int,
         top_p: float,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         content = "".join(m.get("content", "") for m in messages if m.get("role") == "user") or "ok"
         return InferenceUtils.chat_openai_response(model=model, content=content)
@@ -245,10 +245,10 @@ class FakeProvider(Provider):
         model: str,
         messages: List[Dict[str, str]],
         temperature: float,
-        max_tokens: int,
         top_p: float,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
+        **kwargs: Any,
     ):
         # Flux simple en 2 chunks
         yield "Hello ", None
