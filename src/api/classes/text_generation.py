@@ -1,6 +1,7 @@
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from api.providers import ProviderRegistry
+from api.v1.routes.chat.chat_models import ChatCompletionResponse
 
 
 class TextGeneration:
@@ -20,7 +21,7 @@ class TextGeneration:
     async def generate_stream_response(
         self,
         model: str,
-        messages: list,
+        messages: List[Dict[str, str]],
         temperature: float,
         max_tokens: int,
         top_p: float,
@@ -29,18 +30,24 @@ class TextGeneration:
         tool_choice: Optional[Any] = None,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
-        Génère une réponse en streaming formatée pour SSE.
+        Génère une réponse en streaming pour SSE.
 
         Args:
             model: Identifiant du modèle à utiliser
-            messages: Liste des messages de l'historique de conversation
+            messages: Liste de messages normalisés au format OpenAI
+                (p. ex. [{"role": "user", "content": "..."}])
             temperature: Contrôle de la randomisation (0-1)
             max_tokens: Nombre maximum de tokens à générer
             top_p: Valeur de top_p pour l'échantillonnage
             job_id: Identifiant unique de la tâche
+            tools: Définition des outils (OpenAI Tools) si applicable
+            tool_choice: Stratégie de sélection d'outil
 
         Returns:
-            Un générateur asynchrone de dictionnaires contenant les chunks et métadonnées
+            Un générateur qui émet, à chaque itération, un dictionnaire
+            minimal {"chunk": str, "finish_reason": Optional[str], "job_id": str}.
+            Ces éléments sont ensuite encapsulés par la route dans des objets
+            `ChatCompletionChunk` (OpenAI) pour le flux SSE.
         """
         provider = self._get_provider(model)
         async for response, finish_reason in provider.chat_stream(
@@ -63,30 +70,34 @@ class TextGeneration:
     async def complete(
         self,
         model: str,
-        messages: list,
+        messages: List[Dict[str, str]],
         temperature: float,
         max_tokens: int,
         top_p: float,
         job_id: str,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
-    ) -> Dict[str, Any]:
+    ) -> ChatCompletionResponse:
         """
-        Génère une réponse complète (non-streaming).
+        Génère une réponse complète (non-streaming) au format OpenAI
+        `chat.completion`.
 
         Args:
             model: Identifiant du modèle à utiliser
-            messages: Liste des messages de l'historique de conversation
+            messages: Liste de messages normalisés au format OpenAI
+                (p. ex. [{"role": "user", "content": "..."}])
             temperature: Contrôle de la randomisation (0-1)
             max_tokens: Nombre maximum de tokens à générer
             top_p: Valeur de top_p pour l'échantillonnage
             job_id: Identifiant unique de la tâche
+            tools: Définition des outils (OpenAI Tools) si applicable
+            tool_choice: Stratégie de sélection d'outil
 
         Returns:
-            Un dictionnaire contenant la réponse et l'identifiant de la tâche
+            Un objet `ChatCompletionResponse` conforme aux schémas OpenAI.
         """
         provider = self._get_provider(model)
-        response = await provider.chat_complete(
+        response_dict = await provider.chat_complete(
             model=model,
             messages=messages,
             temperature=temperature,
@@ -95,5 +106,6 @@ class TextGeneration:
             tools=tools,
             tool_choice=tool_choice,
         )
-        # Les providers doivent retourner une réponse OpenAI-compat déjà formatée
-        return response
+        # Validation/normalisation selon le modèle Pydantic exposé
+        # par `api.v1.routes.chat.chat_models.ChatCompletionResponse`.
+        return ChatCompletionResponse.model_validate(response_dict)
