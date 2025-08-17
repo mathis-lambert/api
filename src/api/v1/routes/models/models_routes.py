@@ -17,10 +17,10 @@ async def read_model(
     model_id: str = Path(..., description="The ID of the model to retrieve"),
     registry: ProviderRegistry = Depends(get_provider_registry),
 ):
-    provider = registry.get_by_model_prefix(model_id)
+    provider, normalized = registry.resolve(model_id)
     if provider is None:
         return Model(id=model_id)
-    m = await provider.get_model(model_id)
+    m = await provider.get_model(normalized)
     return Model(id=m.id, owned_by=m.provider)
 
 

@@ -15,17 +15,55 @@ class ProviderRegistry:
     def get(self, name: str) -> Optional[Provider]:
         return self._providers.get(name)
 
-    def get_by_model_prefix(self, model: str) -> Optional[Provider]:
-        # Heuristique simple par préfixe (ex: "gpt-" -> OpenAI)
-        model_lower = model.lower()
+    def resolve(self, model: str) -> tuple[Optional[Provider], str]:
+        """
+        Résout un identifiant de modèle vers (provider, model_normalisé).
+
+        Supporte le format explicite "provider/model" ainsi que la
+        compatibilité avec l'ancien format basé sur heuristique de préfixe.
+        """
+        model_stripped = model.strip()
+        model_lower = model_stripped.lower()
+
+        # Aliases connus pour les providers
+        alias_to_provider = {
+            "openai": "openai",
+            "oai": "openai",
+            "mistral": "mistral",
+            "mistralai": "mistral",
+            "anthropic": "anthropic",
+            "claude": "anthropic",
+            "google": "google",
+            "gemini": "google",
+        }
+
+        # Format explicite provider/model
+        if "/" in model_lower:
+            provider_part, model_part = model_lower.split("/", 1)
+            provider_key = alias_to_provider.get(provider_part)
+            provider = self.get(provider_key) if provider_key else None
+            # On retourne le modèle normalisé sans le préfixe provider
+            normalized_model = model_stripped.split("/", 1)[1] if "/" in model_stripped else model_stripped
+            return provider, normalized_model
+
+        # Ancien format: déduction par préfixe
         if model_lower.startswith("mistral") or model_lower.startswith("open-mistral"):
-            return self.get("mistral")
+            return self.get("mistral"), model_stripped
         if model_lower.startswith("gpt-") or model_lower.startswith("o3") or model_lower.startswith("o4"):
-            return self.get("openai")
+            return self.get("openai"), model_stripped
         if model_lower.startswith("claude"):
-            return self.get("anthropic")
-        if model_lower.startswith("gemini") or model_lower.startswith("textembedding-gecko"):
-            return self.get("google")
-        return None
+            return self.get("anthropic"), model_stripped
+        if model_lower.startswith("gemini") or model_lower.startswith("textembedding-gecko") or model_lower.startswith("text-embedding-"):
+            return self.get("google"), model_stripped
+
+        return None, model_stripped
+
+    def get_by_model_prefix(self, model: str) -> Optional[Provider]:
+        """
+        Conservé pour compatibilité: retourne uniquement le provider.
+        Préfère utiliser `resolve` pour aussi obtenir le modèle normalisé.
+        """
+        provider, _ = self.resolve(model)
+        return provider
 
 

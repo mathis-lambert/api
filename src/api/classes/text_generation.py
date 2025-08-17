@@ -9,14 +9,14 @@ class TextGeneration:
         self.provider_registry = provider_registry
         self.inference_utils = inference_utils
 
-    def _get_provider(self, model: str):
-        provider = self.provider_registry.get_by_model_prefix(model)
+    def _resolve_provider_and_model(self, model: str):
+        provider, normalized_model = self.provider_registry.resolve(model)
         if provider is None:
             # Try default provider if any explicitly registered under "mistral"
             provider = self.provider_registry.get("mistral")
         if provider is None:
             raise ValueError("Aucun provider compatible trouvé pour ce modèle")
-        return provider
+        return provider, normalized_model
 
     async def generate_stream_response(
         self,
@@ -49,9 +49,9 @@ class TextGeneration:
             Ces éléments sont ensuite encapsulés par la route dans des objets
             `ChatCompletionChunk` (OpenAI) pour le flux SSE.
         """
-        provider = self._get_provider(model)
+        provider, normalized_model = self._resolve_provider_and_model(model)
         async for response, finish_reason in provider.chat_stream(
-            model=model,
+            model=normalized_model,
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
@@ -96,9 +96,9 @@ class TextGeneration:
         Returns:
             Un objet `ChatCompletionResponse` conforme aux schémas OpenAI.
         """
-        provider = self._get_provider(model)
+        provider, normalized_model = self._resolve_provider_and_model(model)
         response_dict = await provider.chat_complete(
-            model=model,
+            model=normalized_model,
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,

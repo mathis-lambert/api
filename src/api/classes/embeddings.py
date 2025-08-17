@@ -9,13 +9,13 @@ class Embeddings:
         self.provider_registry = provider_registry
         self.inference_utils = inference_utils
 
-    def _get_provider(self, model: str):
-        provider = self.provider_registry.get_by_model_prefix(model)
+    def _resolve_provider_and_model(self, model: str):
+        provider, normalized_model = self.provider_registry.resolve(model)
         if provider is None:
             provider = self.provider_registry.get("mistral")
         if provider is None:
             raise ValueError("Aucun provider compatible trouvé pour ce modèle d'embedding")
-        return provider
+        return provider, normalized_model
 
     async def generate_embeddings(
         self,
@@ -24,8 +24,8 @@ class Embeddings:
         job_id: str,
         output_format: str = "dict",
     ):
-        provider = self._get_provider(model)
-        response = await provider.create_embeddings(model=model, inputs=inputs)
+        provider, normalized_model = self._resolve_provider_and_model(model)
+        response = await provider.create_embeddings(model=normalized_model, inputs=inputs)
         data = response.get("data", None)
 
         if not data:
@@ -36,4 +36,4 @@ class Embeddings:
         elif output_format == "tuple":
             return self.inference_utils.embedding_to_tuple(inputs, data)
 
-        return self.inference_utils.format_embeddings_openai(inputs, data, model)
+        return self.inference_utils.format_embeddings_openai(inputs, data, normalized_model)
