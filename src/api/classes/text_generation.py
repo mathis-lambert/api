@@ -1,10 +1,21 @@
-from typing import Any, AsyncGenerator, Dict
+from typing import Any, AsyncGenerator, Dict, List, Optional
+
+from api.providers import ProviderRegistry
 
 
 class TextGeneration:
-    def __init__(self, mistralai_service, inference_utils):
-        self.mistralai_service = mistralai_service
+    def __init__(self, provider_registry: ProviderRegistry, inference_utils):
+        self.provider_registry = provider_registry
         self.inference_utils = inference_utils
+
+    def _get_provider(self, model: str):
+        provider = self.provider_registry.get_by_model_prefix(model)
+        if provider is None:
+            # Try default provider if any explicitly registered under "mistral"
+            provider = self.provider_registry.get("mistral")
+        if provider is None:
+            raise ValueError("Aucun provider compatible trouvé pour ce modèle")
+        return provider
 
     async def generate_stream_response(
         self,
@@ -14,6 +25,8 @@ class TextGeneration:
         max_tokens: int,
         top_p: float,
         job_id: str,
+        tools: Optional[List[Dict[str, Any]]] = None,
+        tool_choice: Optional[Any] = None,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Génère une réponse en streaming formatée pour SSE.
@@ -29,12 +42,15 @@ class TextGeneration:
         Returns:
             Un générateur asynchrone de dictionnaires contenant les chunks et métadonnées
         """
-        async for response, finish_reason in self.mistralai_service.stream(
+        provider = self._get_provider(model)
+        async for response, finish_reason in provider.chat_stream(
             model=model,
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
             top_p=top_p,
+            tools=tools,
+            tool_choice=tool_choice,
         ):
             # Formater chaque chunk comme un dictionnaire pour la sérialisation JSON
             chunk_data = {
@@ -52,7 +68,9 @@ class TextGeneration:
         max_tokens: int,
         top_p: float,
         job_id: str,
-    ) -> Dict[str, str]:
+        tools: Optional[List[Dict[str, Any]]] = None,
+        tool_choice: Optional[Any] = None,
+    ) -> Dict[str, Any]:
         """
         Génère une réponse complète (non-streaming).
 
@@ -67,11 +85,15 @@ class TextGeneration:
         Returns:
             Un dictionnaire contenant la réponse et l'identifiant de la tâche
         """
-        response = await self.mistralai_service.complete(
+        provider = self._get_provider(model)
+        response = await provider.chat_complete(
             model=model,
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
             top_p=top_p,
+            tools=tools,
+            tool_choice=tool_choice,
         )
-        return self.inference_utils.format_response(response, job_id)
+        # Les providers doivent retourner une réponse OpenAI-compat déjà formatée
+        return response
