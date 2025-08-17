@@ -22,7 +22,7 @@ def test_chat_completions_stream_sse(client: TestClient):
     }
     with client.stream("POST", "/v1/chat/completions", json=payload) as r:
         assert r.status_code == 200
-        # lit quelques lignes du flux
+        # read a few lines from the stream
         first_chunk = next(r.iter_lines())
         assert isinstance(first_chunk, (bytes, str))
 
