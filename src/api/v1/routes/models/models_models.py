@@ -28,7 +28,7 @@ class Pricing(BaseModel):
 
 
 class ModelDTO(BaseModel):
-    id: str
+    id: Optional[str] = None
     name: Optional[str] = None
     created: Optional[int] = None
     description: Optional[str] = None
