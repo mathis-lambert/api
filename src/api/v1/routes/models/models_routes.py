@@ -17,12 +17,8 @@ async def read_model(
     model: str = Path(..., description="The ID of the model to retrieve"),
     models_client: ModelsClient = Depends(get_models),
 ):
-    # Provider ignored: OpenRouter already aggregates
     data = await models_client.read_model(author, model)
-    # Return as is; Pydantic will validate/filter according to the DTO (if needed)
-    if isinstance(data, dict):
-        return data
-    return {"id": model}
+    return ModelDTO(**data)
 
 
 @router.get("/", response_model=ListModelsResponse, summary="List all models")
