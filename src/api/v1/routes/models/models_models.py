@@ -28,16 +28,16 @@ class Pricing(BaseModel):
 
 
 class EndpointDTO(BaseModel):
-    context_length: Optional[int] = None
+    context_length: Optional[float] = None
     pricing: Optional[Pricing] = None
     provider_name: Optional[str] = None
     tag: Optional[str] = None
     quantization: Optional[str] = None
-    max_completion_tokens: Optional[int] = None
-    max_prompt_tokens: Optional[int] = None
+    max_completion_tokens: Optional[float] = None
+    max_prompt_tokens: Optional[float] = None
     supported_parameters: Optional[List[str]] = None
-    status: Optional[int] = None
-    uptime_last_30m: Optional[int] = None
+    status: Optional[str] = None
+    uptime_last_30m: Optional[float] = None
 
 
 class ModelDTO(BaseModel):
