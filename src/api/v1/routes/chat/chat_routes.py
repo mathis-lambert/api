@@ -1,6 +1,6 @@
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Dict
 
 from api.classes import TextGeneration
@@ -209,29 +209,28 @@ async def completions(
     job_id: str = str(uuid.uuid4())
 
     # Log event to MongoDB
+    request_body = {
+        "model": chat_request.model,
+        "messages": [m.model_dump() for m in chat_request.messages],
+        "stream": chat_request.stream,
+        "job_id": job_id,
+        "timestamp": datetime.now(timezone.utc),
+    }
+
     await mongodb_client.log_event(
         user["_id"],
         job_id,
         "chat_completions",
-        {
-            "model": chat_request.model,
-            "messages": chat_request.messages,
-            "stream": chat_request.stream,
-            "job_id": job_id,
-            "timestamp": datetime.now(),
-        },
+        request_body,
     )
 
-    # Preparation of kwargs: allow specific provider fields
-    # Start from the initial body (dict) to extract allowed extras
+
     body_dict = chat_request.model_dump(exclude_none=True)
-    # Remove standard fields that we handle explicitly
+    
+    
     standard_fields = {
         "model",
         "messages",
-        "prompt",
-        "input",
-        "history",
         "tools",
         "tool_choice",
     }
