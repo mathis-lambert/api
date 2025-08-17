@@ -40,4 +40,6 @@ class Models:
             return {"id": model, "object": "model"}
         r = await self._client.get(f"/models/{author}/{model}/endpoints")
         r.raise_for_status()
-        return r.json()
+        json_data = r.json()
+        model_data = json_data.get("data", {})
+        return model_data
