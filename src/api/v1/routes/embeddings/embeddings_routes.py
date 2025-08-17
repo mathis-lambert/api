@@ -28,7 +28,7 @@ async def embeddings(
 ):
     """Get embeddings for the input text."""
     # Validation de l'entrée
-    if not body.chunks:
+    if not body.input:
         raise HTTPException(status_code=400, detail="Aucune entrée fournie")
 
     job_id: str = str(uuid.uuid4())
@@ -41,7 +41,7 @@ async def embeddings(
     # Génération embeddings
     embeddings_data = await embeddings.generate_embeddings(
         model=body.model,
-        inputs=body.chunks,
+        inputs=body.input,
         job_id=job_id,
     )
 

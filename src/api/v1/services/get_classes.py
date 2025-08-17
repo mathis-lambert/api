@@ -2,35 +2,54 @@ from fastapi import Depends
 
 from api.classes import Embeddings, TextGeneration
 from api.utils import InferenceUtils
+from api.providers import ProviderRegistry
+from api.providers.mistral_provider import MistralProvider
+from api.providers.openai_provider import OpenAIProvider
+from api.providers.anthropic_provider import AnthropicProvider
+from api.providers.google_provider import GoogleProvider
 
 from .get_databases import get_mongo_client, get_qdrant_client
-from .mistralai_service import MistralAIService
-from .rag_service import RagService
+
+
+def _build_provider_registry() -> ProviderRegistry:
+    registry = ProviderRegistry()
+    # Chaque provider peut lever une erreur si la clé API n'est pas définie.
+    # On capture pour permettre au système de fonctionner même si certains providers sont absents.
+    try:
+        registry.register(MistralProvider())
+    except Exception:
+        pass
+    try:
+        registry.register(OpenAIProvider())
+    except Exception:
+        pass
+    try:
+        registry.register(AnthropicProvider())
+    except Exception:
+        pass
+    try:
+        registry.register(GoogleProvider())
+    except Exception:
+        pass
+    return registry
+
+
+def get_provider_registry() -> ProviderRegistry:
+    return _build_provider_registry()
 
 
 def get_embeddings(
-    mistralai_service: MistralAIService = Depends(),
+    provider_registry: ProviderRegistry = Depends(get_provider_registry),
     inference_utils: InferenceUtils = Depends(),
 ) -> Embeddings:
-    return Embeddings(mistralai_service, inference_utils)
+    return Embeddings(provider_registry, inference_utils)
 
 
-def get_rag_service(
-    embeddings: Embeddings = Depends(get_embeddings),
-    qdrant_client=Depends(get_qdrant_client),
-    mongo_client=Depends(get_mongo_client),
-) -> RagService:
-    return RagService(embeddings, qdrant_client, mongo_client)
+# RAG supprimé au profit de /vector_stores/{id}/search
 
 
 def get_text_generation(
-    mistralai_service: MistralAIService = Depends(),
+    provider_registry: ProviderRegistry = Depends(get_provider_registry),
     inference_utils: InferenceUtils = Depends(),
 ) -> TextGeneration:
-    return TextGeneration(mistralai_service, inference_utils)
-
-
-def get_mistral_service(
-    mistralai_service: MistralAIService = Depends(),
-) -> MistralAIService:
-    return mistralai_service
+    return TextGeneration(provider_registry, inference_utils)

@@ -1,13 +1,14 @@
-from mistralai.models import (
-    ModelList,
-    RetrieveModelV1ModelsModelIDGetResponseRetrieveModelV1ModelsModelIDGet,
-)
+from typing import List, Optional
+
 from pydantic import BaseModel
 
 
-class GetModelResponse(BaseModel):
-    model: RetrieveModelV1ModelsModelIDGetResponseRetrieveModelV1ModelsModelIDGet
+class Model(BaseModel):
+    id: str
+    object: str = "model"
+    owned_by: Optional[str] = None
 
 
 class ListModelsResponse(BaseModel):
-    models: ModelList
+    object: str = "list"
+    data: List[Model]
