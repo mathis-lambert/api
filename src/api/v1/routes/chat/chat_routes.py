@@ -28,9 +28,7 @@ router = APIRouter()
 
 
 async def sse_stream_generator(
-    generator: AsyncGenerator[Dict[str, Any], None],
-    job_id: str,
-    model: str,
+    generator: AsyncGenerator[ChatCompletionChunk, None],
 ) -> AsyncGenerator[str, None]:
     """
     SSE stream producing OpenAI `chat.completion.chunk` events.
@@ -41,54 +39,8 @@ async def sse_stream_generator(
       serialized `ChatCompletionChunk`.
     """
     try:
-        final_answer = ""
-        last_finish_reason = None
-
-        # First event with assistant role
-        prelude = ChatCompletionChunk(
-            id=f"chatcmpl-{job_id}",
-            object="chat.completion.chunk",
-            created=int(datetime.now().timestamp()),
-            model=model,
-            choices=[Choice(index=0, delta=ChoiceDelta(role="assistant", content=""))],
-        ).model_dump_json()
-
-        yield f"data: {prelude}\n\n"
-
         async for chunk in generator:
-            delta_text = chunk.get("chunk", "")
-
-            if chunk.get("finish_reason"):
-                last_finish_reason = chunk.get("finish_reason")
-
-            final_answer += delta_text
-
-            data = ChatCompletionChunk(
-                id=f"chatcmpl-{job_id}",
-                object="chat.completion.chunk",
-                created=int(datetime.now().timestamp()),
-                model=model,
-                choices=[Choice(index=0, delta=ChoiceDelta(content=delta_text))],
-            ).model_dump_json()
-
-            yield f"data: {data}\n\n"
-
-        # Finish event
-        done_data = ChatCompletionChunk(
-            id=f"chatcmpl-{job_id}",
-            object="chat.completion.chunk",
-            created=int(datetime.now().timestamp()),
-            model=model,
-            choices=[
-                Choice(
-                    index=0,
-                    delta=ChoiceDelta(),
-                    finish_reason=last_finish_reason or "stop",
-                )
-            ],
-        ).model_dump_json()
-
-        yield f"data: {done_data}\n\n"
+            yield f"data: {chunk.model_dump_json()}\n\n"
 
     except Exception as e:
         logger.error(f"Error during SSE streaming: {str(e)}")
@@ -240,9 +192,7 @@ async def completions(
         )
 
         # Transform the generator into an SSE stream
-        sse_generator = sse_stream_generator(
-            stream_generator, job_id, chat_request.model
-        )
+        sse_generator = sse_stream_generator(stream_generator)
 
         return StreamingResponse(
             sse_generator,
