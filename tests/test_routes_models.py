@@ -7,7 +7,7 @@ def test_list_models(client: TestClient):
     body = r.json()
     assert body["object"] == "list"
     assert isinstance(body["data"], list)
-    # Doit contenir au moins les modèles factices
+    # Should contain at least the dummy models
     assert any(m["owned_by"] in {"mistral", "openai", "anthropic", "google"} for m in body["data"]) 
 
 
