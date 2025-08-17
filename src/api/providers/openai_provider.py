@@ -29,8 +29,6 @@ class OpenAIProvider(Provider):
         self,
         model: str,
         messages: List[Dict[str, str]],
-        temperature: float,
-        top_p: float,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
         **kwargs: Any,
@@ -38,8 +36,6 @@ class OpenAIProvider(Provider):
         params: Dict[str, Any] = {
             "model": model,
             "messages": messages,
-            "temperature": temperature,
-            "top_p": top_p,
         }
         if tools is not None:
             params["tools"] = tools
@@ -55,8 +51,6 @@ class OpenAIProvider(Provider):
         self,
         model: str,
         messages: List[Dict[str, str]],
-        temperature: float,
-        top_p: float,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
         **kwargs: Any,
@@ -64,8 +58,6 @@ class OpenAIProvider(Provider):
         params: Dict[str, Any] = {
             "model": model,
             "messages": messages,
-            "temperature": temperature,
-            "top_p": top_p,
             "stream": True,
         }
         if tools is not None:

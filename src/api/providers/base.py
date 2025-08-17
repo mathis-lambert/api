@@ -43,8 +43,6 @@ class Provider(ABC):
         self,
         model: str,
         messages: List[Dict[str, str]],
-        temperature: float,
-        top_p: float,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
         **kwargs: Any,
