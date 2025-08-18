@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from pydantic import BaseModel, Field
 
@@ -12,7 +12,7 @@ class VectorStore(BaseModel):
 
 
 class CreateVectorStoreRequest(BaseModel):
-    name: str = Field(..., description="Nom du vector store (collection Qdrant)")
+    name: str = Field(..., description="Vector store name (Qdrant collection)")
 
 
 class CreateVectorStoreResponse(BaseModel):
@@ -31,3 +31,20 @@ class VectorStoreSearchRequest(BaseModel):
     query: str
     model: str
     limit: int = 5
+
+
+class UpdateVectorStoreRequest(BaseModel):
+    chunks: List[str] = Field(..., description="List of text chunks to encode")
+    metadata: List[Dict] = Field(..., description="List of corresponding metadata")
+    model: str = Field(default="text-embedding-3-large", description="Embedding model to use")
+
+
+class UpdateVectorStoreResponse(BaseModel):
+    success: bool
+    message: str
+    chunks_added: int
+
+
+class DeleteVectorStoreResponse(BaseModel):
+    success: bool
+    message: str

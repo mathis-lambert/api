@@ -1,4 +1,5 @@
 import time
+import uuid
 from typing import List
 
 from api.classes import Embeddings
@@ -14,7 +15,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from .vector_store_models import (
     CreateVectorStoreRequest,
     CreateVectorStoreResponse,
+    DeleteVectorStoreResponse,
     ListVectorStoresResponse,
+    UpdateVectorStoreRequest,
+    UpdateVectorStoreResponse,
     VectorStore,
     VectorStoreSearchRequest,
 )
@@ -44,7 +48,7 @@ async def create_vector_store(
         {"name": body.name, "user_id": ObjectId(user["_id"])},
     )
     if existing:
-        raise HTTPException(status_code=400, detail="Vector store existe déjà")
+        raise HTTPException(status_code=400, detail="Vector store already exists")
 
     # Create the Qdrant collection and save in MongoDB
     await qdrant.create_collection(collection_name=body.name)
@@ -86,7 +90,7 @@ async def get_vector_store(
         {"name": vector_store_id, "user_id": ObjectId(user["_id"])},
     )
     if not one:
-        raise HTTPException(status_code=404, detail="Vector store introuvable")
+        raise HTTPException(status_code=404, detail="Vector store not found")
     info = await qdrant.get_collection(vector_store_id)
     return _collection_to_vector_store(vector_store_id, info)
 
@@ -106,7 +110,7 @@ async def search_vector_store(
         {"name": vector_store_id, "user_id": ObjectId(user["_id"])},
     )
     if not one:
-        raise HTTPException(status_code=404, detail="Vector store introuvable")
+        raise HTTPException(status_code=404, detail="Vector store not found")
 
     ids, vectors, payloads = await embeddings.generate_embeddings(
         model=body.model,
@@ -120,3 +124,91 @@ async def search_vector_store(
         limit=body.limit,
     )
     return {"object": "list", "data": results}
+
+
+@router.put("/{vector_store_id}", response_model=UpdateVectorStoreResponse)
+async def update_vector_store(
+    vector_store_id: str,
+    body: UpdateVectorStoreRequest,
+    qdrant: QdrantConnector = Depends(get_qdrant_client),
+    mongo: MongoDBConnector = Depends(get_mongo_client),
+    user: dict = Depends(get_current_user_with_api_key_or_token),
+    embeddings: Embeddings = Depends(get_embeddings),
+):
+    # Ownership check
+    one = await mongo.find_one(
+        "vector_db_collections",
+        {"name": vector_store_id, "user_id": ObjectId(user["_id"])},
+    )
+    if not one:
+        raise HTTPException(status_code=404, detail="Vector store not found")
+
+    # Validation de l'entrée
+    if not body.chunks:
+        raise HTTPException(status_code=400, detail="No input provided")
+    
+    if len(body.chunks) != len(body.metadata):
+        raise HTTPException(status_code=400, detail="Number of chunks must match number of metadata entries")
+
+    job_id: str = str(uuid.uuid4())
+
+    # Generate embeddings for chunks
+    ids, vectors, payloads = await embeddings.generate_embeddings(
+        model=body.model,
+        inputs=body.chunks,
+        job_id=job_id,
+        output_format="tuple",
+    )
+
+    # Add vectors to Qdrant collection
+    await qdrant.add_vectors_to_collection(
+        collection_name=vector_store_id,
+        vectors=vectors,
+        payloads=body.metadata,
+        ids=ids,
+    )
+
+    # Log event to mongodb
+    await mongo.log_event(
+        user["_id"], job_id, "encode", {
+            "collection_name": vector_store_id,
+            "model": body.model,
+            "chunks_count": len(body.chunks)
+        }
+    )
+
+    return UpdateVectorStoreResponse(
+        success=True,
+        message=f"{len(body.chunks)} chunks added to vector store {vector_store_id}",
+        chunks_added=len(body.chunks)
+    )
+
+
+@router.delete("/{vector_store_id}", response_model=DeleteVectorStoreResponse)
+async def delete_vector_store(
+    vector_store_id: str,
+    qdrant: QdrantConnector = Depends(get_qdrant_client),
+    mongo: MongoDBConnector = Depends(get_mongo_client),
+    user: dict = Depends(get_current_user_with_api_key_or_token),
+):
+    # Ownership check
+    one = await mongo.find_one(
+        "vector_db_collections",
+        {"name": vector_store_id, "user_id": ObjectId(user["_id"])},
+    )
+    if not one:
+        raise HTTPException(status_code=404, detail="Vector store not found")
+
+    # Delete collection from Qdrant
+    await qdrant.delete_collection(collection_name=vector_store_id)
+    
+    # Delete from MongoDB
+    await mongo.delete_one(
+        "vector_db_collections",
+        {"name": vector_store_id, "user_id": ObjectId(user["_id"])},
+    )
+
+    return DeleteVectorStoreResponse(
+        success=True,
+        message=f"Vector store {vector_store_id} successfully deleted"
+    )
