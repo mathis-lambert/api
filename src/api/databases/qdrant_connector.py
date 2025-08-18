@@ -88,13 +88,11 @@ class QdrantConnector:
 
         await self.client.upsert(collection_name=collection_name, points=points)
 
-    async def create_collection(
-        self, collection_name, vector_size=1024, distance="Cosine"
-    ):
+    async def create_collection(self, collection_name, vector_size, distance="Cosine"):
         """Crée une nouvelle collection dans Qdrant de manière asynchrone.
 
         :param collection_name: Nom de la collection.
-        :param vector_size: Taille des vecteurs de la collection (par défaut 1024).
+        :param vector_size: Taille des vecteurs de la collection.
         :param distance: Métrique de distance (par défaut "Cosine", peut être "Euclidean", etc.).
         """
         if distance not in ["Cosine", "Euclidean"]:

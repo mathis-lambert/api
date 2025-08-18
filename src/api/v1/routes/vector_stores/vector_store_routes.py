@@ -54,7 +54,11 @@ async def create_vector_store(
         raise HTTPException(status_code=400, detail="Vector store already exists")
 
     # Create the Qdrant collection and save in MongoDB
-    await qdrant.create_collection(collection_name=body.name)
+    await qdrant.create_collection(
+        collection_name=body.name,
+        vector_size=body.vector_size,
+        distance=body.distance,
+    )
     await mongo.insert_one(
         "vector_db_collections",
         {"name": body.name, "user_id": ObjectId(user["_id"])},

@@ -13,6 +13,14 @@ class VectorStore(BaseModel):
 
 class CreateVectorStoreRequest(BaseModel):
     name: str = Field(..., description="Vector store name (Qdrant collection)")
+    vector_size: int = Field(
+        ...,
+        description="Vector size: text-embedding-3-small (1536), text-embedding-3-large (3072)",
+    )
+    distance: Optional[str] = Field(
+        "Cosine",
+        description="Distance function to use: Cosine, Euclidean",
+    )
 
 
 class CreateVectorStoreResponse(BaseModel):
