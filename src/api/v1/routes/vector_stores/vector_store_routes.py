@@ -3,6 +3,7 @@ import uuid
 from typing import List
 
 from api.classes import Embeddings
+from api.classes.embeddings import EMBEDDING_MODELS
 from api.databases import MongoDBConnector, QdrantConnector
 from api.v1.security import (
     ensure_valid_api_key_or_token,
@@ -53,15 +54,30 @@ async def create_vector_store(
     if existing:
         raise HTTPException(status_code=400, detail="Vector store already exists")
 
+    if body.embedding_model not in EMBEDDING_MODELS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid embedding model: {body.embedding_model}",
+        )
+
+    vector_size = EMBEDDING_MODELS[body.embedding_model]["vector_size"]
+    distance = body.distance or "Cosine"
+
     # Create the Qdrant collection and save in MongoDB
     await qdrant.create_collection(
         collection_name=body.name,
-        vector_size=body.vector_size,
-        distance=body.distance,
+        vector_size=vector_size,
+        distance=distance,
     )
     await mongo.insert_one(
         "vector_db_collections",
-        {"name": body.name, "user_id": ObjectId(user["_id"])},
+        {
+            "name": body.name,
+            "user_id": ObjectId(user["_id"]),
+            "vector_size": vector_size,
+            "distance": distance,
+            "embedding_model": body.embedding_model,
+        },
     )
     info = await qdrant.get_collection(body.name)
     vs = _collection_to_vector_store(body.name, info)
@@ -120,7 +136,7 @@ async def search_vector_store(
         raise HTTPException(status_code=404, detail="Vector store not found")
 
     ids, vectors, payloads = await embeddings.generate_embeddings(
-        model=body.model,
+        model=one["embedding_model"],
         inputs=[body.query],
         job_id="",
         output_format="tuple",
@@ -164,7 +180,7 @@ async def update_vector_store(
 
     # Generate embeddings for chunks
     ids, vectors, payloads = await embeddings.generate_embeddings(
-        model=body.model,
+        model=one["embedding_model"],
         inputs=body.chunks,
         job_id=job_id,
         output_format="tuple",
@@ -189,7 +205,7 @@ async def update_vector_store(
         "encode",
         {
             "collection_name": vector_store_id,
-            "model": body.model,
+            "model": one["embedding_model"],
             "chunks_count": len(body.chunks),
         },
     )

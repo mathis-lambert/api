@@ -14,6 +14,15 @@ from api.utils import CustomLogger
 
 logger = CustomLogger.get_logger(__name__)
 
+EMBEDDING_MODELS = {
+    "text-embedding-3-small": {
+        "vector_size": 1536,
+    },
+    "text-embedding-3-large": {
+        "vector_size": 3072,
+    },
+}
+
 
 Mode = Literal["auto", "realtime", "batch"]
 OutputFormat = Literal["dict", "points", "tuple"]
@@ -128,12 +137,7 @@ class Embeddings:
     # ------------------------------ Helpers -----------------------------------
     @staticmethod
     def _normalize_model(model: str) -> str:
-        allowed = {
-            "text-embedding-3-small",
-            "text-embedding-3-large",
-            "text-embedding-ada-002",
-        }
-        return model if model in allowed else "text-embedding-3-small"
+        return model if model in EMBEDDING_MODELS else "text-embedding-3-small"
 
     def _build_openai_client(self) -> Optional[AsyncOpenAI]:
         api_key = os.environ.get("OPENAI_API_KEY")

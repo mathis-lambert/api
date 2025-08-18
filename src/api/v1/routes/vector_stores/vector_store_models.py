@@ -13,9 +13,9 @@ class VectorStore(BaseModel):
 
 class CreateVectorStoreRequest(BaseModel):
     name: str = Field(..., description="Vector store name (Qdrant collection)")
-    vector_size: int = Field(
+    embedding_model: str = Field(
         ...,
-        description="Vector size: text-embedding-3-small (1536), text-embedding-3-large (3072)",
+        description="Embedding model to use: text-embedding-3-small, text-embedding-3-large",
     )
     distance: Optional[str] = Field(
         "Cosine",
@@ -37,14 +37,10 @@ class ListVectorStoresResponse(BaseModel):
 
 class VectorStoreSearchRequest(BaseModel):
     query: str
-    model: str
     limit: int = 5
 
 
 class UpdateVectorStoreRequest(BaseModel):
-    model: str = Field(
-        default="text-embedding-3-large", description="Embedding model to use"
-    )
     chunks: List[str] = Field(..., description="List of text chunks to encode")
     metadata: Optional[List[Dict]] = Field(
         [], description="List of corresponding metadata"
