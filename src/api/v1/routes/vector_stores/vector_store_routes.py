@@ -146,9 +146,12 @@ async def update_vector_store(
     # Validation de l'entrée
     if not body.chunks:
         raise HTTPException(status_code=400, detail="No input provided")
-    
-    if len(body.chunks) != len(body.metadata):
-        raise HTTPException(status_code=400, detail="Number of chunks must match number of metadata entries")
+
+    if len(body.metadata) > 0 and len(body.chunks) != len(body.metadata):
+        raise HTTPException(
+            status_code=400,
+            detail="Number of chunks must match number of metadata entries",
+        )
 
     job_id: str = str(uuid.uuid4())
 
@@ -170,17 +173,20 @@ async def update_vector_store(
 
     # Log event to mongodb
     await mongo.log_event(
-        user["_id"], job_id, "encode", {
+        user["_id"],
+        job_id,
+        "encode",
+        {
             "collection_name": vector_store_id,
             "model": body.model,
-            "chunks_count": len(body.chunks)
-        }
+            "chunks_count": len(body.chunks),
+        },
     )
 
     return UpdateVectorStoreResponse(
         success=True,
         message=f"{len(body.chunks)} chunks added to vector store {vector_store_id}",
-        chunks_added=len(body.chunks)
+        chunks_added=len(body.chunks),
     )
 
 
@@ -201,7 +207,7 @@ async def delete_vector_store(
 
     # Delete collection from Qdrant
     await qdrant.delete_collection(collection_name=vector_store_id)
-    
+
     # Delete from MongoDB
     await mongo.delete_one(
         "vector_db_collections",
@@ -209,6 +215,5 @@ async def delete_vector_store(
     )
 
     return DeleteVectorStoreResponse(
-        success=True,
-        message=f"Vector store {vector_store_id} successfully deleted"
+        success=True, message=f"Vector store {vector_store_id} successfully deleted"
     )

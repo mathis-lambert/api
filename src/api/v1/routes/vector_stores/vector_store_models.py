@@ -34,9 +34,13 @@ class VectorStoreSearchRequest(BaseModel):
 
 
 class UpdateVectorStoreRequest(BaseModel):
-    model: str = Field(default="text-embedding-3-large", description="Embedding model to use")
+    model: str = Field(
+        default="text-embedding-3-large", description="Embedding model to use"
+    )
     chunks: List[str] = Field(..., description="List of text chunks to encode")
-    metadata: Optional[List[Dict]] = Field(None, description="List of corresponding metadata")
+    metadata: Optional[List[Dict]] = Field(
+        [], description="List of corresponding metadata"
+    )
 
 
 class UpdateVectorStoreResponse(BaseModel):
