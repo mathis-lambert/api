@@ -22,8 +22,11 @@ from .vector_store_models import (
     VectorStore,
     VectorStoreSearchRequest,
 )
+from api.utils import CustomLogger
 
 router = APIRouter(dependencies=[Depends(ensure_valid_api_key_or_token)])
+
+logger = CustomLogger.get_logger(__name__)
 
 
 def _collection_to_vector_store(name: str, info) -> VectorStore:
@@ -163,12 +166,16 @@ async def update_vector_store(
         output_format="tuple",
     )
 
+    logger.info(f"ids: {ids}")
+    logger.info(f"vectors: {vectors}")
+    logger.info(f"payloads: {payloads}")
+
     # Add vectors to Qdrant collection
-    await qdrant.add_vectors_to_collection(
+    await qdrant.batch_upsert(
         collection_name=vector_store_id,
+        indexes=ids,
         vectors=vectors,
-        payloads=body.metadata,
-        ids=ids,
+        payloads=payloads,
     )
 
     # Log event to mongodb

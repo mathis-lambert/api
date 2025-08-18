@@ -5,7 +5,7 @@ import io
 import json
 import os
 import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Literal
 
 from openai import AsyncOpenAI
 from qdrant_client.models import PointStruct
@@ -15,66 +15,117 @@ from api.utils import CustomLogger
 logger = CustomLogger.get_logger(__name__)
 
 
+Mode = Literal["auto", "realtime", "batch"]
+OutputFormat = Literal["dict", "points", "tuple"]
+
+
 class Embeddings:
-    def __init__(self, openai_client: Optional[AsyncOpenAI] = None):
+    """
+    Async embeddings helper that supports both:
+      1) Realtime requests via /v1/embeddings
+      2) Asynchronous Batch API via /v1/batches
+
+    Public API:
+        await Embeddings(...).generate_embeddings(
+            model: str,
+            inputs: List[str],
+            mode: Literal["auto", "realtime", "batch"] = "auto",
+            job_id: Optional[str] = None,
+            output_format: Literal["dict", "points", "tuple"] = "dict",
+        ) -> Any
+
+    Output formats:
+        - "dict": OpenAI-like list object
+        - "points": List[PointStruct] for Qdrant
+        - "tuple": (ids, vectors, payloads)
+    """
+
+    def __init__(
+        self,
+        openai_client: Optional[AsyncOpenAI] = None,
+        *,
+        batch_threshold: int = 256,  # switch to Batch API if inputs >= threshold when mode="auto"
+    ):
         self._client = openai_client or self._build_openai_client()
+        self.batch_threshold = max(1, int(batch_threshold))
 
-    @staticmethod
-    def _format_embeddings_openai(
-        inputs: List[str], data: List[Dict], model: str
-    ) -> Dict:
-        return {
-            "id": f"embd-{uuid.uuid4().hex[:12]}",
-            "object": "list",
-            "model": model,
-            "data": [
-                {
-                    "object": "embedding",
-                    "embedding": embedding["embedding"],
-                    "index": i,
-                }
-                for i, embedding in enumerate(data)
-                if embedding["object"] == "embedding"
-            ],
-            "usage": {"prompt_tokens": 0, "total_tokens": 0},
-        }
+    # ----------------------------- Core entrypoint -----------------------------
+    async def generate_embeddings(
+        self,
+        model: str,
+        inputs: List[str],
+        *,
+        mode: Mode = "auto",
+        job_id: Optional[str] = None,
+        output_format: OutputFormat = "dict",
+    ) -> Any:
+        if not isinstance(inputs, list) or not all(isinstance(x, str) for x in inputs):
+            raise TypeError("inputs must be List[str]")
 
-    @staticmethod
-    def _embedding_to_points(inputs: List[str], data: List[Dict]) -> List[PointStruct]:
-        points: List = [
-            {
-                "id": i,
-                "vector": embedding["embedding"],
-                "payload": {"source_text": inputs[i]},
-            }
-            for i, embedding in enumerate(data)
-            if embedding["object"] == "embedding"
+        normalized_model = self._normalize_model(model)
+
+        if mode == "auto":
+            chosen = "batch" if len(inputs) >= self.batch_threshold else "realtime"
+        else:
+            chosen = mode
+
+        if chosen == "realtime":
+            data = await self._embeddings_realtime(normalized_model, inputs)
+        else:
+            # Batch API requires a job id; generate if not provided
+            job_id = job_id or f"emb-{uuid.uuid4().hex[:12]}"
+            data = await self._embeddings_batch_api(normalized_model, inputs, job_id)
+
+        if not data:
+            raise ValueError("Empty embeddings response")
+
+        if output_format == "points":
+            return self._embedding_to_points(inputs, data)
+        if output_format == "tuple":
+            return self._embedding_to_tuple(inputs, data)
+        return self._format_embeddings_openai(inputs, data, normalized_model)
+
+    # ----------------------------- Realtime path -------------------------------
+    async def _embeddings_realtime(
+        self, model: str, inputs: List[str]
+    ) -> List[Dict[str, Any]]:
+        if self._client is None:
+            logger.warning(
+                "OpenAI client not configured; returning offline stub embeddings"
+            )
+            return self._offline_embeddings_stub(inputs)
+
+        # The embeddings endpoint accepts a list of inputs directly
+        resp = await self._client.embeddings.create(model=model, input=inputs)
+        # Normalize to a simple list[{object:"embedding", embedding:[...]}]
+        return [
+            {"object": "embedding", "embedding": item.embedding}
+            for item in getattr(resp, "data", [])
         ]
-        return points
 
-    @staticmethod
-    def _embedding_to_tuple(
-        inputs: List[str], data: List[Dict]
-    ) -> Tuple[List[int], List[List[float]], List[Dict]]:
-        ids = []
-        vectors = []
-        payloads = []
+    # ------------------------------ Batch path --------------------------------
+    async def _embeddings_batch_api(
+        self, model: str, inputs: List[str], job_id: str
+    ) -> List[Dict[str, Any]]:
+        if self._client is None:
+            logger.warning(
+                "OpenAI client not configured; returning offline stub embeddings"
+            )
+            return self._offline_embeddings_stub(inputs)
 
-        for i, embedding in enumerate(data):
-            if embedding["object"] == "embedding":
-                ids.append(i)
-                vectors.append(embedding["embedding"])
-                payloads.append({"source_text": inputs[i]})
+        content = self._build_batch_jsonl_content(model, inputs, job_id)
+        uploaded = await self._upload_file(content)
+        batch = await self._create_embeddings_batch(uploaded.id, job_id)
 
-        return ids, vectors, payloads
+        current = await self._wait_for_batch_completion(batch.id)
+        output_file_id = getattr(current, "output_file_id", None)
+        if not output_file_id:
+            raise ValueError("Batch finished without output_file_id")
 
-    def _build_openai_client(self) -> Optional[AsyncOpenAI]:
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if not api_key:
-            return None
-        # OpenAI embeddings use the native OpenAI endpoint
-        return AsyncOpenAI(api_key=api_key)
+        text_data = await self._read_file_text(output_file_id)
+        return self._parse_embeddings_jsonl(text_data, len(inputs))
 
+    # ------------------------------ Helpers -----------------------------------
     @staticmethod
     def _normalize_model(model: str) -> str:
         allowed = {
@@ -82,44 +133,61 @@ class Embeddings:
             "text-embedding-3-large",
             "text-embedding-ada-002",
         }
-        if model in allowed:
-            return model
-        # By default, choose the cheapest
-        return "text-embedding-3-small"
+        return model if model in allowed else "text-embedding-3-small"
 
-    async def _batch_embeddings_openai(
-        self, model: str, inputs: List[str], job_id: str
-    ) -> List[Dict[str, Any]]:
-        # Offline fallback when no OpenAI client is configured
-        if self._client is None:
-            return self._offline_embeddings_stub(inputs)
-
-        content = self._build_batch_jsonl_content(model, inputs, job_id)
-
-        uploaded = await self._upload_file(content)
-        batch = await self._create_embeddings_batch(uploaded.id, job_id)
-
-        current = await self._wait_for_batch_completion(batch.id)
-
-        output_file_id = getattr(current, "output_file_id", None)
-        if not output_file_id:
-            raise ValueError("Batch finished without output_file_id")
-
-        text_data = await self._read_file_text(output_file_id)
-
-        return self._parse_embeddings_jsonl(text_data, len(inputs))
+    def _build_openai_client(self) -> Optional[AsyncOpenAI]:
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            logger.warning("OPENAI_API_KEY not set; Embeddings will use offline stub")
+            return None
+        return AsyncOpenAI(api_key=api_key)
 
     @staticmethod
-    def _offline_embeddings_stub(inputs: List[str]) -> List[Dict[str, Any]]:
-        results: List[Dict[str, Any]] = []
-        for _ in inputs:
-            # Deterministic small vector of size 3 for tests
-            results.append({"object": "embedding", "embedding": [0.1, 0.2, 0.3]})
-        return results
+    def _format_embeddings_openai(
+        inputs: List[str], data: List[Dict], model: str
+    ) -> Dict[str, Any]:
+        return {
+            "id": f"embd-{uuid.uuid4().hex[:12]}",
+            "object": "list",
+            "model": model,
+            "data": [
+                {"object": "embedding", "embedding": emb["embedding"], "index": i}
+                for i, emb in enumerate(data)
+                if emb.get("object") == "embedding"
+            ],
+            "usage": {"prompt_tokens": 0, "total_tokens": 0},
+        }
 
+    @staticmethod
+    def _embedding_to_points(inputs: List[str], data: List[Dict]) -> List[PointStruct]:
+        # Qdrant PointStruct accepts dicts; keep ids stable by index
+        return [
+            {
+                "id": i,
+                "vector": emb["embedding"],
+                "payload": {"source_text": inputs[i]},
+            }
+            for i, emb in enumerate(data)
+            if emb.get("object") == "embedding"
+        ]
+
+    @staticmethod
+    def _embedding_to_tuple(
+        inputs: List[str], data: List[Dict]
+    ) -> Tuple[List[int], List[List[float]], List[Dict]]:
+        ids: List[int] = []
+        vectors: List[List[float]] = []
+        payloads: List[Dict] = []
+        for i, emb in enumerate(data):
+            if emb.get("object") == "embedding":
+                ids.append(i)
+                vectors.append(emb["embedding"])  # type: ignore[index]
+                payloads.append({"source_text": inputs[i]})
+        return ids, vectors, payloads
+
+    # ---------------------------- Batch internals ------------------------------
     @staticmethod
     def _build_batch_jsonl_content(model: str, inputs: List[str], job_id: str) -> bytes:
-        # Build a JSONL content for the Batch API (one request per input)
         lines: List[str] = []
         for idx, text in enumerate(inputs):
             request = {
@@ -146,79 +214,68 @@ class Embeddings:
         )
 
     async def _wait_for_batch_completion(self, batch_id: str) -> Any:
-        terminal_states = {"completed", "failed", "cancelled", "expired", "canceled"}
+        terminal = {"completed", "failed", "cancelled", "canceled", "expired"}
         delay = 1.0
         while True:
-            current = await self._client.batches.retrieve(batch_id)
-            status = getattr(current, "status", None) or getattr(current, "state", None)
-            if status in terminal_states:
+            cur = await self._client.batches.retrieve(batch_id)
+            status = getattr(cur, "status", None) or getattr(cur, "state", None)
+            if status in terminal:
                 if status != "completed":
-                    raise ValueError(
-                        f"OpenAI Batch embeddings not completed: status={status}"
-                    )
-                return current
+                    raise ValueError(f"Batch not completed: status={status}")
+                return cur
             await asyncio.sleep(delay)
             delay = min(delay * 1.5, 5.0)
 
     async def _read_file_text(self, file_id: str) -> str:
-        file_content = await self._client.files.content(file_id)
-        # files.content may return an HTTPX-like response with .text; normalize to str
-        if hasattr(file_content, "text"):
-            return file_content.text  # type: ignore[return-value]
-        return (
-            file_content
-            if isinstance(file_content, str)
-            else file_content.decode("utf-8")
-        )
+        resp = await self._client.files.content(file_id)
+        # Try common async interfaces
+        # 1) httpx-like: .text
+        text = getattr(resp, "text", None)
+        if isinstance(text, str):
+            return text
+        # 2) aio stream with .read()
+        read = getattr(resp, "read", None)
+        if callable(read):
+            data = await read()
+            return (
+                data.decode("utf-8")
+                if isinstance(data, (bytes, bytearray))
+                else str(data)
+            )
+        # 3) raw bytes
+        if isinstance(resp, (bytes, bytearray)):
+            return resp.decode("utf-8")
+        return str(resp)
 
     @staticmethod
     def _parse_embeddings_jsonl(
         text_data: str, num_inputs: int
     ) -> List[Dict[str, Any]]:
-        # Parse the lines and reconstruct in the initial order
         by_index: Dict[int, List[float]] = {}
         for line in text_data.splitlines():
             if not line.strip():
                 continue
             obj = json.loads(line)
-            custom_id: Optional[str] = obj.get("custom_id")
+            custom_id = obj.get("custom_id")
             if not isinstance(custom_id, str):
                 continue
             try:
                 idx = int(custom_id.rsplit("-", 1)[-1])
             except Exception:
                 continue
-            response = obj.get("response", {})
-            body = response.get("body", {})
+            body = obj.get("response", {}).get("body", {})
             data_list = body.get("data", [])
             if data_list:
                 emb = data_list[0].get("embedding")
                 if isinstance(emb, list):
                     by_index[idx] = emb
+        # Rebuild in input order
+        return [
+            {"object": "embedding", "embedding": by_index.get(i, [])}
+            for i in range(num_inputs)
+        ]
 
-        # Build the OpenAI-like output
-        results: List[Dict[str, Any]] = []
-        for i in range(num_inputs):
-            vector = by_index.get(i, [])
-            results.append({"object": "embedding", "embedding": vector})
-        return results
-
-    async def generate_embeddings(
-        self,
-        model: str,
-        inputs: List[str],
-        job_id: str,
-        output_format: str = "dict",
-    ) -> Any:
-        normalized_model = self._normalize_model(model)
-        data = await self._batch_embeddings_openai(normalized_model, inputs, job_id)
-
-        if not data:
-            raise ValueError("Invalid response from provider API")
-
-        if output_format == "points":
-            return self._embedding_to_points(inputs, data)
-        if output_format == "tuple":
-            return self._embedding_to_tuple(inputs, data)
-
-        return self._format_embeddings_openai(inputs, data, normalized_model)
+    # ------------------------------ Offline stub -------------------------------
+    @staticmethod
+    def _offline_embeddings_stub(inputs: List[str]) -> List[Dict[str, Any]]:
+        return [{"object": "embedding", "embedding": [0.1, 0.2, 0.3]} for _ in inputs]
