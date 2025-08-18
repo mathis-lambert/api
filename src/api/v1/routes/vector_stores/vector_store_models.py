@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from pydantic import BaseModel, Field
 
@@ -34,9 +34,9 @@ class VectorStoreSearchRequest(BaseModel):
 
 
 class UpdateVectorStoreRequest(BaseModel):
-    chunks: List[str] = Field(..., description="List of text chunks to encode")
-    metadata: List[Dict] = Field(..., description="List of corresponding metadata")
     model: str = Field(default="text-embedding-3-large", description="Embedding model to use")
+    chunks: List[str] = Field(..., description="List of text chunks to encode")
+    metadata: Optional[List[Dict]] = Field(None, description="List of corresponding metadata")
 
 
 class UpdateVectorStoreResponse(BaseModel):
