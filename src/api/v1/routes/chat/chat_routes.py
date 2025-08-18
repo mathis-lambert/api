@@ -66,7 +66,7 @@ async def sse_stream_generator(
             "description": "Success response",
             "content": {
                 "application/json": {
-                    "schema": {"$ref": "#/components/schemas/ChatCompletionResponse"},
+                    "schema": {"$ref": "#/components/schemas/ChatCompletion"},
                     "example": {
                         "id": "chatcmpl-abc123",
                         "object": "chat.completion",
@@ -146,14 +146,14 @@ async def completions(
     """
     Endpoint OpenAI-compatible `POST /v1/chat/completions`.
 
-    - When `stream` is `false`, return a `ChatCompletionResponse` (OpenAI `chat.completion` object).
+    - When `stream` is `false`, return a `ChatCompletion` (OpenAI `chat.completion` object).
     - When `stream` is `true`, return a SSE stream where each `data:`
-      contient un `ChatCompletionChunk` sérialisé.
+      contains a serialized `ChatCompletionChunk`.
     """
     # Minimal validation: the provider will be resolved dynamically
 
     if not chat_request.messages:
-        raise HTTPException(status_code=400, detail="Aucune entrée fournie")
+        raise HTTPException(status_code=400, detail="No input provided")
 
     # Generation of a unique identifier for the task
     job_id: str = str(uuid.uuid4())
