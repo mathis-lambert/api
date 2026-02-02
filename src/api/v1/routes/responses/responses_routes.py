@@ -24,6 +24,7 @@ router = APIRouter()
     - When `stream` = `true`, returns a SSE stream where each `data:` contains
       a serialized response event.
     """,
+    response_model=None,
     dependencies=[Depends(ensure_valid_api_key_or_token)],
 )
 async def create_response(
@@ -52,7 +53,7 @@ async def create_response(
     openrouter_proxy: OpenRouterProxy = Depends(get_openrouter_proxy),
     user: dict = Depends(get_current_user_with_api_key_or_token),
     mongodb_client: MongoDBConnector = Depends(get_mongo_client),
-) -> JSONResponse | Response | StreamingResponse:
+):
     return await proxy_openrouter_request(
         request=request,
         fallback_body=responses_request.model_dump(exclude_none=True),
