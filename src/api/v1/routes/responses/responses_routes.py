@@ -10,40 +10,40 @@ from api.v1.security import (
 from api.v1.services import get_mongo_client, get_openrouter_proxy
 
 from ..llm_proxy import proxy_openrouter_request
-from .chat_models import ChatCompletionsRequest
+from .responses_models import ResponsesRequest
 
 router = APIRouter()
 
 
 @router.post(
-    "/completions",
-    summary="Get chat completions",
-    description="""Generate chat completions in OpenAI Chat Completions format.
+    "",
+    summary="Create response",
+    description="""Generate responses in OpenAI Responses format.
 
-    - When `stream` = `false` (default), returns a `chat.completion` object.
+    - When `stream` = `false` (default), returns a `response` object.
     - When `stream` = `true`, returns a SSE stream where each `data:` contains
-      a serialized `chat.completion.chunk`.
+      a serialized response event.
     """,
     dependencies=[Depends(ensure_valid_api_key_or_token)],
 )
-async def completions(
+async def create_response(
     request: Request,
-    chat_request: ChatCompletionsRequest = Body(
+    responses_request: ResponsesRequest = Body(
         ...,
         examples={
             "non_stream": {
                 "summary": "Standard request (JSON)",
                 "value": {
-                    "model": "mistral-small",
-                    "messages": [{"role": "user", "content": "Bonjour"}],
+                    "model": "openai/gpt-4.1-mini",
+                    "input": "Hello!",
                     "stream": False,
                 },
             },
             "stream": {
                 "summary": "Streaming request (SSE)",
                 "value": {
-                    "model": "mistral-small",
-                    "messages": [{"role": "user", "content": "Bonjour"}],
+                    "model": "openai/gpt-4.1-mini",
+                    "input": "Hello!",
                     "stream": True,
                 },
             },
@@ -55,10 +55,10 @@ async def completions(
 ) -> JSONResponse | Response | StreamingResponse:
     return await proxy_openrouter_request(
         request=request,
-        fallback_body=chat_request.model_dump(exclude_none=True),
+        fallback_body=responses_request.model_dump(exclude_none=True),
         openrouter_proxy=openrouter_proxy,
         mongodb_client=mongodb_client,
         user=user,
-        endpoint="/chat/completions",
-        operation="chat.completions",
+        endpoint="/responses",
+        operation="responses",
     )

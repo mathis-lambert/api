@@ -2,16 +2,18 @@ import time
 import uuid
 from typing import List
 
+from bson import ObjectId
+from fastapi import APIRouter, Depends, HTTPException
+
 from api.classes import Embeddings
 from api.classes.embeddings import EMBEDDING_MODELS
 from api.databases import MongoDBConnector, QdrantConnector
+from api.utils import CustomLogger
 from api.v1.security import (
     ensure_valid_api_key_or_token,
     get_current_user_with_api_key_or_token,
 )
 from api.v1.services import get_embeddings, get_mongo_client, get_qdrant_client
-from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException
 
 from .vector_store_models import (
     CreateVectorStoreRequest,
@@ -23,7 +25,6 @@ from .vector_store_models import (
     VectorStore,
     VectorStoreSearchRequest,
 )
-from api.utils import CustomLogger
 
 router = APIRouter(dependencies=[Depends(ensure_valid_api_key_or_token)])
 

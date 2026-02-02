@@ -3,13 +3,13 @@ from __future__ import annotations
 import asyncio
 import io
 import json
-import os
 import uuid
-from typing import Any, Dict, List, Optional, Tuple, Literal
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from openai import AsyncOpenAI
 from qdrant_client.models import PointStruct
 
+from api.config import get_settings
 from api.utils import CustomLogger
 
 logger = CustomLogger.get_logger(__name__)
@@ -140,7 +140,8 @@ class Embeddings:
         return model if model in EMBEDDING_MODELS else "text-embedding-3-small"
 
     def _build_openai_client(self) -> Optional[AsyncOpenAI]:
-        api_key = os.environ.get("OPENAI_API_KEY")
+        settings = get_settings()
+        api_key = settings.openai_api_key
         if not api_key:
             logger.warning("OPENAI_API_KEY not set; Embeddings will use offline stub")
             return None

@@ -1,23 +1,21 @@
-import os
 from datetime import datetime, timezone
 
 from bson import ObjectId
-from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 
-load_dotenv()
+from api.config import get_settings
 
 
 class MongoDBConnector:
     def __init__(self, logger):
         self.logger = logger
 
-        # Récupérer les informations depuis les variables d'environnement
-        self.host = os.getenv("MONGODB_HOST", "localhost")
-        self.port = int(os.getenv("MONGODB_PORT", 27017))
-        self.username = os.getenv("MONGODB_USERNAME", "root")
-        self.password = os.getenv("MONGODB_PASSWORD", "example")
-        self.database = os.getenv("MONGODB_DATABASE", "api-database")
+        settings = get_settings()
+        self.host = settings.mongodb_host
+        self.port = settings.mongodb_port
+        self.username = settings.mongodb_username
+        self.password = settings.mongodb_password
+        self.database = settings.mongodb_database
 
         # Créer le client MongoDB
         self.client = AsyncIOMotorClient(
@@ -85,6 +83,28 @@ class MongoDBConnector:
         }
         result = await collection.insert_one(event)
         return result.inserted_id
+
+    async def log_llm_request(self, document: dict):
+        collection_name = "llm_requests"
+        collection = self.get_database()[collection_name]
+
+        doc = document.copy()
+        if "created_at" not in doc:
+            doc["created_at"] = datetime.now(timezone.utc)
+
+        user_id = doc.get("user_id")
+        if isinstance(user_id, str):
+            try:
+                doc["user_id"] = self.object_id(user_id)
+            except Exception:
+                # If it's not a valid ObjectId, keep the original value
+                doc["user_id"] = user_id
+
+        result = await collection.insert_one(doc)
+        return result.inserted_id
+
+    async def update_llm_request(self, job_id: str, update: dict):
+        return await self.update_one("llm_requests", {"job_id": job_id}, update)
 
     async def insert_many(self, collection_name, documents):
         collection = self.get_database()[collection_name]

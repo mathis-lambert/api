@@ -1,5 +1,5 @@
 from .embeddings import Embeddings
 from .models import Models
-from .text_generation import TextGeneration
+from .openrouter_proxy import OpenRouterProxy
 
-__all__ = ["TextGeneration", "Embeddings", "Models"]
+__all__ = ["OpenRouterProxy", "Embeddings", "Models"]

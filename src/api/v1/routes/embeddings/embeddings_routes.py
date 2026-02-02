@@ -1,13 +1,14 @@
 import json
 import uuid
 
+from fastapi import APIRouter, Depends, HTTPException
+
 from api.databases import MongoDBConnector
 from api.v1.security import (
     ensure_valid_api_key_or_token,
     get_current_user_with_api_key_or_token,
 )
 from api.v1.services import get_embeddings, get_mongo_client
-from fastapi import APIRouter, Depends, HTTPException
 
 from .embeddings_models import EmbeddingsRequest, EmbeddingsResponse
 

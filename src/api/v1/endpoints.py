@@ -5,6 +5,7 @@ from .routes import (
     chat_router,
     embeddings_router,
     models_router,
+    responses_router,
     vector_store_router,
 )
 
@@ -12,6 +13,7 @@ router = APIRouter()
 
 # OpenAI-compatible:
 router.include_router(chat_router, prefix="/chat", tags=["Chat inference"])
+router.include_router(responses_router, prefix="/responses", tags=["Responses"])
 router.include_router(embeddings_router, prefix="/embeddings", tags=["Embeddings"])
 router.include_router(models_router, prefix="/models", tags=["AI Models"])
 router.include_router(

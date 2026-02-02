@@ -1,20 +1,15 @@
+import json
 import os
 import sys
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List
 
+import httpx
 import pytest
 from bson import ObjectId
 from fastapi.testclient import TestClient
 
-# Ensure the "api" package is imported from the src/ directory
-ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
-SRC_DIR = os.path.join(ROOT_DIR, "src")
-if SRC_DIR not in sys.path:
-    sys.path.insert(0, SRC_DIR)
-
-
-from api.classes import Embeddings, TextGeneration  # noqa: E402
+from api.classes import Embeddings, OpenRouterProxy  # noqa: E402
 from api.main import app  # noqa: E402
 
 # Import des mêmes symboles via le package pour s'assurer que la clé d'override correspond
@@ -34,7 +29,7 @@ from api.v1.services.get_classes import (
     get_embeddings as _get_embeddings_dep,  # noqa: E402
 )
 from api.v1.services.get_classes import (
-    get_text_generation as _get_text_generation_dep,  # noqa: E402
+    get_openrouter_proxy as _get_openrouter_proxy_dep,  # noqa: E402
 )
 from api.v1.services.get_databases import (  # noqa: E402
     get_mongo_client as _get_mongo_client_dep,
@@ -43,10 +38,16 @@ from api.v1.services.get_databases import (
     get_qdrant_client as _get_qdrant_client_dep,
 )
 
+# Ensure the "api" package is imported from the src/ directory
+ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
+SRC_DIR = os.path.join(ROOT_DIR, "src")
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
+
 
 class FakeMongoClientHandle:
     async def close(
-        self
+        self,
     ) -> None:  # compat avec await app.qdrant_client.get_client().close()
         return None
 
@@ -194,6 +195,13 @@ class FakeMongoConnector:
         )
         return True
 
+    async def log_llm_request(self, document: dict):
+        await self.insert_one("llm_requests", document)
+        return True
+
+    async def update_llm_request(self, job_id: str, update: dict):
+        return await self.update_one("llm_requests", {"job_id": job_id}, update)
+
 
 class FakeQdrantClientHandle:
     async def close(self) -> None:
@@ -266,15 +274,89 @@ def test_app():
     app.dependency_overrides[_get_mongo_client_dep] = lambda: app.mongodb_client
     app.dependency_overrides[_get_qdrant_client_dep] = lambda: app.qdrant_client
 
-    # Overrides de classes (TextGeneration / Embeddings)
+    # Overrides de classes (OpenRouterProxy / Embeddings)
     def _get_embeddings_override():
         return Embeddings()
 
-    def _get_text_generation_override():
-        return TextGeneration()
+    def _get_openrouter_proxy_override():
+        def _handler(request: httpx.Request) -> httpx.Response:
+            body = json.loads(request.content.decode("utf-8"))
+            path = request.url.path
+            if path.endswith("/responses"):
+                if body.get("stream"):
+                    content = (
+                        b'data: {"id":"resp1","type":"response.output_text.delta","delta":"hi"}\n\n'
+                        b"data: [DONE]\n\n"
+                    )
+                    return httpx.Response(
+                        status_code=200,
+                        headers={"content-type": "text/event-stream"},
+                        content=content,
+                    )
+                return httpx.Response(
+                    status_code=200,
+                    json={
+                        "id": "resp1",
+                        "object": "response",
+                        "model": body.get("model"),
+                        "output": [
+                            {
+                                "id": "msg1",
+                                "type": "message",
+                                "role": "assistant",
+                                "content": [{"type": "output_text", "text": "hi"}],
+                            }
+                        ],
+                        "usage": {
+                            "input_tokens": 1,
+                            "output_tokens": 1,
+                            "total_tokens": 2,
+                        },
+                    },
+                )
+            if body.get("stream"):
+                content = (
+                    b'data: {"id":"resp1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"role":"assistant","content":"hi"}}]}\n\n'
+                    b'data: {"id":"resp1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}\n\n'
+                    b"data: [DONE]\n\n"
+                )
+                return httpx.Response(
+                    status_code=200,
+                    headers={"content-type": "text/event-stream"},
+                    content=content,
+                )
+            return httpx.Response(
+                status_code=200,
+                json={
+                    "id": "resp1",
+                    "object": "chat.completion",
+                    "created": 0,
+                    "model": body.get("model"),
+                    "choices": [
+                        {
+                            "index": 0,
+                            "message": {"role": "assistant", "content": "hi"},
+                            "finish_reason": "stop",
+                            "logprobs": None,
+                        }
+                    ],
+                    "usage": {
+                        "prompt_tokens": 1,
+                        "completion_tokens": 1,
+                        "total_tokens": 2,
+                    },
+                },
+            )
+
+        transport = httpx.MockTransport(_handler)
+        client = httpx.AsyncClient(
+            transport=transport,
+            base_url="https://openrouter.ai/api/v1",
+        )
+        return OpenRouterProxy(http_client=client)
 
     app.dependency_overrides[_get_embeddings_dep] = _get_embeddings_override
-    app.dependency_overrides[_get_text_generation_dep] = _get_text_generation_override
+    app.dependency_overrides[_get_openrouter_proxy_dep] = _get_openrouter_proxy_override
 
     return app
 

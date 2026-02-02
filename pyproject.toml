@@ -17,7 +17,8 @@ dependencies = [
     "openai>=1.40.0",
     "httpx>=0.27.0",
     "anthropic>=0.39.0",
-    "google-generativeai>=0.7.2"
+    "google-generativeai>=0.7.2",
+    "pydantic-settings>=2.12.0",
 ]
 
 [project.optional-dependencies]
@@ -58,8 +59,6 @@ extend-ignore = ["E203", "W503"]
 
 [tool.ruff]
 line-length = 88
-select = ["A", "B", "C", "E", "F", "I", "N", "Q", "T", "W"]
-ignore = ["A002", "A003", "B008", "E203", "E501"]
 exclude = [
     ".git",
     "__pycache__",
@@ -69,6 +68,10 @@ exclude = [
     "build",
     "dist"
 ]
+
+[tool.ruff.lint]
+select = ["A", "B", "C", "E", "F", "I", "N", "Q", "T", "W"]
+ignore = ["A002", "A003", "B008", "E203", "E501"]
 
 [tool.isort]
 profile = "black"

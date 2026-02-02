@@ -11,7 +11,7 @@ Welcome to the `api` repository! This repository hosts the core API infrastructu
 - **FastAPI**: A modern, fast (high-performance) web framework for building APIs with Python 3.13 based on standard Python type hints.
 - **MongoDB**: A NoSQL database used for storing application data, offering flexibility and scalability.
 - **Qdrant**: A vector database used for implementing Retrieval-Augmented Generation (RAG) features, enhancing information retrieval capabilities.
-- **LLM Integration**: Routes for calling the MistralAI API to leverage Large Language Models (LLMs) for various NLP tasks.
+- **LLM Integration**: OpenAI-compatible chat completions proxied to OpenRouter.
 - **Versioning**: A systematic versioning approach with endpoints like `/v1`, `/v2`, etc., to manage API changes and ensure backward compatibility.
 
 ## 🚀 Getting Started
@@ -21,7 +21,7 @@ Welcome to the `api` repository! This repository hosts the core API infrastructu
 - Python 3.13
 - MongoDB instance
 - Qdrant instance
-- MistralAI API key
+- OpenRouter API key
 
 ### Installation
 
@@ -47,7 +47,10 @@ Welcome to the `api` repository! This repository hosts the core API infrastructu
    ```
    MONGODB_URI=your_mongodb_connection_string
    QDRANT_URI=your_qdrant_connection_string
-   MISTRAL_API_KEY=your_mistral_api_key
+   OPENROUTER_API_KEY=your_openrouter_api_key
+   OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+   OPENROUTER_SITE_URL=https://your-site.example
+   OPENROUTER_APP_NAME=your-app-name
    ```
 
 ### Running the API
@@ -72,7 +75,8 @@ The API will be accessible at `http://127.0.0.1:3001`.
   - `GET /v1/health`: Check the status of the API.
 
 - **LLM Routes**:
-  - `POST /v1/chat/completions`: Generate text completions using the MistralAI API.
+  - `POST /v1/chat/completions`: OpenAI-compatible chat completions proxied to OpenRouter (metadata-only logging to MongoDB).
+  - `POST /v1/responses`: OpenAI-compatible responses proxied to OpenRouter (metadata-only logging to MongoDB).
 
 - **Data Routes**:
   - `GET /v1/data`: Retrieve data from MongoDB.
@@ -98,4 +102,3 @@ Have questions or want to chat? Feel free to reach out!
 ---
 
 Happy coding! 💻✨
-

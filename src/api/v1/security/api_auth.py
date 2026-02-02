@@ -7,18 +7,17 @@ from typing import Any, Dict, Optional
 
 import jwt
 from bson import ObjectId
-from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, Request, Security
 from fastapi.security.api_key import APIKeyHeader
 from jwt.exceptions import PyJWTError
 
+from api.config import get_settings
 from api.utils import CustomLogger
 
 from .oauth2_scheme import oauth2_scheme
 
 logger = CustomLogger.get_logger(__name__)
-
-load_dotenv()
+settings = get_settings()
 
 
 class AuthError(Exception):
@@ -40,7 +39,7 @@ class APIKeyNotFoundError(Exception):
 
 
 class APIAuth:
-    SECRET_KEY = os.getenv("SECRET_KEY")  # clé secret pour signer le token
+    SECRET_KEY = settings.secret_key  # clé secret pour signer le token
     ALGORITHM = "HS256"  # algorithme de signature
 
     def __init__(self):

@@ -1,19 +1,17 @@
-import os
 from typing import List
 
-from dotenv import load_dotenv
 from qdrant_client import AsyncQdrantClient, models
 
-load_dotenv()
+from api.config import get_settings
 
 
 class QdrantConnector:
     def __init__(self, logger):
         self.logger = logger
 
-        # Récupérer les variables d'environnement
-        self.api_key = os.getenv("QDRANT_API_KEY")
-        self.url = os.getenv("QDRANT_URL")
+        settings = get_settings()
+        self.api_key = settings.qdrant_api_key
+        self.url = settings.qdrant_url
 
         if not self.api_key or not self.url:
             raise ValueError(
@@ -157,7 +155,9 @@ class QdrantConnector:
 
         points = [
             models.PointStruct(id=idx, vector=vector, payload=payload)
-            for idx, (vector, payload) in enumerate(zip(vectors, payloads))
+            for idx, (vector, payload) in enumerate(
+                zip(vectors, payloads, strict=False)
+            )  # strict=False to avoid issues if lengths differ
         ]
 
         await self.client.upsert(collection_name=collection_name, points=points)

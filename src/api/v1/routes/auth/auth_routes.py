@@ -1,6 +1,8 @@
 from datetime import timedelta
 from typing import List
 
+from fastapi import APIRouter, Depends, Form, HTTPException, status
+
 from api.v1.security import (
     APIAuth,
     APIKeyNotFoundError,
@@ -13,7 +15,6 @@ from api.v1.security import (
     get_current_user_with_token,
     oauth2_scheme,
 )
-from fastapi import APIRouter, Depends, Form, HTTPException, status
 
 from .auth_models import (
     ApiKeyEntry,

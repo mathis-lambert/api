@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import os
 from typing import Any, Dict, Optional
 
 import httpx
+
+from api.config import get_settings
 
 
 class Models:
@@ -11,16 +12,17 @@ class Models:
         self._client = http_client or self._build_client()
 
     def _build_client(self) -> Optional[httpx.AsyncClient]:
-        api_key = os.environ.get("OPENROUTER_API_KEY")
+        settings = get_settings()
+        api_key = settings.openrouter_api_key
         if not api_key:
             return None
-        base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+        base_url = settings.openrouter_base_url
         headers: Dict[str, str] = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
-        site = os.environ.get("OPENROUTER_SITE_URL")
-        app_name = os.environ.get("OPENROUTER_APP_NAME")
+        site = settings.openrouter_site_url
+        app_name = settings.openrouter_app_name
         if site:
             headers["HTTP-Referer"] = site
         if app_name:

@@ -1,15 +1,12 @@
-import os
 from contextlib import asynccontextmanager
 
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from api.config import get_settings
 from api.utils import CustomLogger, ensure_database_connection
 from api.v1 import v1_router
-
-load_dotenv()
 
 logger = CustomLogger().get_logger("main")
 
@@ -47,8 +44,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Vérifiez si le mode maintenance est activé via une variable d'environnement
-MAINTENANCE_MODE = os.getenv("MAINTENANCE_MODE", "false").lower() == "true"
+settings = get_settings()
+MAINTENANCE_MODE = settings.maintenance_mode
 
 
 @app.middleware("http")

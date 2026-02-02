@@ -1,6 +1,7 @@
+from fastapi import APIRouter, Depends, Path
+
 from api.classes import Models as ModelsClient
 from api.v1.services.get_classes import get_models
-from fastapi import APIRouter, Depends, Path
 
 from .models_models import ListModelsResponse, ModelDTO
 

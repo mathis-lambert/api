@@ -1,13 +1,13 @@
-from api.classes import Embeddings, Models, TextGeneration
+from api.classes import Embeddings, Models, OpenRouterProxy
 
 
 def get_embeddings() -> Embeddings:
     return Embeddings()
 
 
-def get_text_generation() -> TextGeneration:
-    return TextGeneration()
-
-
 def get_models() -> Models:
     return Models()
+
+
+def get_openrouter_proxy() -> OpenRouterProxy:
+    return OpenRouterProxy()
